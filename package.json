@@ -1,0 +1,18 @@
+{
+  "name": "omniconvert",
+  "version": "1.0.0",
+  "description": "Hybrid Local-First (Browser WASM/WebWorkers/Canvas/WebCodecs) & Managed Server-Fallback Universal File Converter",
+  "type": "module",
+  "scripts": {
+    "start": "node --experimental-strip-types src/server/index.ts",
+    "dev": "node --watch --experimental-strip-types src/server/index.ts",
+    "test": "node --experimental-strip-types --test tests/**/*.test.ts",
+    "test:shared": "node --experimental-strip-types --test tests/shared/*.test.ts",
+    "test:server": "node --experimental-strip-types --test tests/server/*.test.ts",
+    "test:client": "node --experimental-strip-types --test tests/client/*.test.ts"
+  },
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "license": "MIT"
+}

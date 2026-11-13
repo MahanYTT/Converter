@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OmniConvert — Hybrid Local-First + Server-Fallback Architecture Blueprint</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --panel: #111827;
+      --panel-alt: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --emerald: #10b981;
+      --cyan: #06b6d4;
+      --indigo: #6366f1;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --purple: #a855f7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: radial-gradient(circle at top right, #1e1b4b 0%, var(--bg) 45%);
+      color: var(--text);
+      line-height: 1.55;
+      padding: 28px;
+    }
+    .container { max-width: 1280px; margin: 0 auto; }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 24px 28px;
+      background: rgba(17, 24, 39, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(12px);
+    }
+    .title-group h1 {
+      font-size: 1.65rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(90deg, #34d399, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .title-group p { color: var(--muted); font-size: 0.95rem; margin-top: 4px; }
+    .pill-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .pill {
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: var(--panel-alt);
+    }
+    .pill.local { border-color: rgba(16, 185, 129, 0.4); color: #34d399; }
+    .pill.server { border-color: rgba(99, 102, 241, 0.4); color: #818cf8; }
+    .pill.agents { border-color: rgba(245, 158, 11, 0.4); color: #fbbf24; }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(540px, 1fr)); gap: 20px; margin-bottom: 24px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; margin-bottom: 24px; }
+    . grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 24px; }
+
+    .card {
+      background: rgba(17, 24, 39, 0.88);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+    .card h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card p.sub { color: var(--muted); font-size: 0.88rem; margin-bottom: 16px; }
+
+    .tier-list { display: flex; flex-direction: column; gap: 12px; }
+    .tier {
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: rgba(30, 41, 59, 0.65);
+      border-left: 4px solid var(--emerald);
+    }
+    .tier.t2 { border-left-color: var(--cyan); }
+    .tier.t3 { border-left-color: var(--amber); }
+    .tier.t4 { border-left-color: var(--indigo); }
+    .tier-head { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 0.92rem; margin-bottom: 4px; }
+    .tier-badge { font-size: 0.72rem; padding: 2px 8px; border-radius: 6px; background: rgba(255,255,255,0.08); color: var(--text); }
+    .tier-desc { font-size: 0.83rem; color: var(--muted); }
+
+    /* Interactive Simulator */
+    .sim-box {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; }
+    select, input[type="range"] {
+      width: 100%;
+      padding: 9px 12px;
+      background: var(--panel-alt);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      font-size: 0.88rem;
+    }
+    .sim-output {
+      padding: 16px;
+      border-radius: 10px;
+      background: #090d16;
+      border: 1px solid var(--border);
+    }
+    .sim-route-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.82rem;
+      margin-bottom: 8px;
+    }
+    .route-local { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.4); }
+    .route-wasm { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.4); }
+    .route-server { background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99,102,241,0.4); }
+
+    .agent-card {
+      border-top: 3px solid var(--emerald);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .agent-card.pro { border-top-color: var(--indigo); }
+    .agent-card.flash { border-top-color: var(--amber); }
+    .code-list {
+      margin-top: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.78rem;
+      background: #090d16;
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: #cbd5e1;
+      list-style: none;
+    }
+    .code-list li { padding: 3px 0; }
+    .metric-row { display: flex; justify-content: space-between; font-size: 0.83rem; padding: 6px 0; border-bottom: 1px solid rgba(51,65,85,0.5); }
+    .metric-row:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="title-group">
+        <h1>OmniConvert — Hybrid Local-First + Server-Fallback Architecture</h1>
+        <p>Repository: <strong>github.com/MahanYTT/Converter</strong> • Zero-Upload Browser Engine + Managed Server Queue & Storage</p>
+      </div>
+      <div class="pill-row">
+        <span class="pill local">⚡ 85–95% Local Browser Execution</span>
+        <span class="pill server">☁️ Managed 3-Lane Server Fallback</span>
+        <span class="pill agents">🤖 3x Specialized Subagents Active</span>
+      </div>
+    </header>
+
+    <div class="grid-2">
+      <!-- 4-Tier Execution Pipeline -->
+      <div class="card">
+        <h2>⚡ 4-Tier Hybrid Conversion Pipeline</h2>
+        <p class="sub">Every file is inspected via binary magic bytes and routed to the lowest-overhead execution tier capable of handling the format and file size.</p>
+        <div class="tier-list">
+          <div class="tier t1">
+            <div class="tier-head">
+              <span>Tier 1: LOCAL_NATIVE (Browser Hardware APIs)</span>
+              <span class="tier-badge">0 KB Extra • Instant</span>
+            </div>
+            <div class="tier-desc">OffscreenCanvas (PNG, JPEG, WEBP, AVIF, BMP, ICO, SVG), WebAudio API + PCM WAV encoder, WebCodecs, native CompressionStream (GZIP/Deflate).</div>
+          </div>
+          <div class="tier t2">
+            <div class="tier-head">
+              <span>Tier 2: LOCAL_PURE_JS (Web Worker Compute)</span>
+              <span class="tier-badge">&lt; 50 KB • Zero Upload</span>
+            </div>
+            <div class="tier-desc">CSV ↔ JSON ↔ YAML ↔ XML ↔ TOML ↔ INI ↔ Markdown ↔ HTML ↔ SQL INSERT, streaming ZIP/TAR archive engine, and client-side PDF generation/splitting.</div>
+          </div>
+          <div class="tier t3">
+            <div class="tier-head">
+              <span>Tier 3: LOCAL_WASM (Lazy On-Demand WebAssembly)</span>
+              <span class="tier-badge">Cached in IndexedDB</span>
+            </div>
+            <div class="tier-desc">Fetched only when needed inside isolated Web Workers with OOM watchdog: FFmpeg.wasm (MP4/WEBM/MP3/FLAC/GIF), ImageMagick.wasm (TIFF/PSD/RAW/HEIC), DuckDB.wasm (Parquet).</div>
+          </div>
+          <div class="tier t4">
+            <div class="tier-head">
+              <span>Tier 4: SERVER_FALLBACK (Managed Backend Queue)</span>
+              <span class="tier-badge">SSE Live Progress + Auto-Purge</span>
+            </div>
+            <div class="tier-desc">Handles non-browser formats (LibreOffice DOCX/PPTX/XLSX → PDF, Pandoc EPUB/LaTeX, 7z/RAR/CAD) or files exceeding safe client RAM thresholds.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Smart Router Simulator -->
+      <div class="card">
+        <h2>🧭 Interactive Smart Router Decision Simulator</h2>
+        <p class="sub">Test how <code>ConversionRouter</code> evaluates conversion pairs, file sizes, device RAM, and Cross-Origin Isolation (SharedArrayBuffer):</p>
+        <div class="sim-box">
+          <div>
+            <label for="simPair">Conversion Pair</label>
+            <select id="simPair">
+              <option value="png-webp">PNG → WEBP (Image)</option>
+              <option value="svg-png">SVG → PNG (Vector Raster)</option>
+              <option value="mp3-wav">MP3 → WAV (Audio Decode)</option>
+              <option value="csv-json">CSV → JSON / YAML / SQL (Tabular)</option>
+              <option value="mp4-gif">MP4 → Animated GIF (Video)</option>
+              <option value="mp4-webm">MP4 → WEBM (Video Transcode)</option>
+              <option value="docx-pdf">DOCX → PDF (Office Layout)</option>
+              <option value="pptx-pdf">PPTX → PDF (Presentation)</option>
+              <option value="7z-zip">7Z → ZIP (Complex Archive)</option>
+            </select>
+          </div>
+          <div>
+            <label for="simSize">File Size: <span id="simSizeVal">25</span> MB</label>
+            <input type="range" id="simSize" min="1" max="1000" value="25" />
+          </div>
+          <div>
+            <label for="simRam">Device RAM</label>
+            <select id="simRam">
+              <option value="2">2 GB (Low-End Mobile)</option>
+              <option value="4">4 GB (Standard Mobile/Tablet)</option>
+              <option value="8" selected>8 GB (Standard Laptop)</option>
+              <option value="16">16+ GB (Desktop Workstation)</option>
+            </select>
+          </div>
+          <div>
+            <label for="simCoi">Cross-Origin Isolated (SAB)</label>
+            <select id="simCoi">
+              <option value="true" selected>Enabled (Multi-thread WASM)</option>
+              <option value="false">Disabled (Single-thread)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="sim-output" id="simOutput"></div>
+
+        <div style="margin-top: 18px;">
+          <h2 style="font-size: 1rem; margin-bottom: 8px;">🛡️ Server Lifecycle & Storage Guardrails</h2>
+          <div class="metric-row"><span>Concurrency Lanes</span><strong>fast (8x) • document (4x) • media (2x)</strong></div>
+          <div class="metric-row"><span>Quarantined Scratch Path</span><code>/tmp/omniconvert/jobs/&lt;uuid&gt;/</code></div>
+          <div class="metric-row"><span>Ephemeral TTL & Sweeper</span><strong>15-min hard TTL + Delete-on-Download</strong></div>
+          <div class="metric-row"><span>Security Verification</span><strong>64-byte Magic-Byte Check + Zip-Bomb Guard (100:1) + No-Shell Spawn</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 Subagents Allocation -->
+    <div class="grid-3">
+      <div class="card agent-card">
+        <div>
+          <h2>🟢 1x <code>gemini-4-hydrogen</code></h2>
+          <p class="sub"><strong>Frontend UI, Smart Router & Local Browser Worker Engine</strong></p>
+          <p style="font-size: 0.85rem; color: #cbd5e1;">Builds the reactive web interface, device capability profiler, <code>ConversionRouter</code>, bounded <code>WorkerPool</code> with OOM recycling, and local browser engines (OffscreenCanvas, WebAudio WAV, ZIP/TAR, PDF).</p>
+        </div>
+        <ul class="code-list">
+          <li>📁 src/client/router/device-profiler.ts</li>
+          <li>📁 src/client/router/conversion-router.ts</li>
+          <li>📁 src/client/workers/worker-pool.ts</li>
+          <li>📁 src/client/workers/image.worker.ts</li>
+          <li>📁 src/client/workers/audio.worker.ts</li>
+          <li>📁 src/client/ui/app.ts &amp; index.html</li>
+        </ul>
+      </div>
+
+      <div class="card agent-card pro">
+        <div>
+          <h2>🟣 1x <code>gemini-3.1-pro-preview</code></h2>
+          <p class="sub"><strong>Server Fallback Engine, Queue/Storage Lifecycle & Security</strong></p>
+          <p style="font-size: 0.85rem; color: #cbd5e1;">Builds the multi-lane priority job scheduler, ephemeral storage manager with 15-min TTL sweeper &amp; disk quota circuit breaker, magic-byte &amp; zip-bomb security guards, SSE progress stream, and server adapters.</p>
+        </div>
+        <ul class="code-list">
+          <li>📁 src/server/management/storage-manager.ts</li>
+          <li>📁 src/server/management/job-queue.ts</li>
+          <li>📁 src/server/security/file-validator.ts</li>
+          <li>📁 src/server/adapters/*.adapter.ts</li>
+          <li>📁 src/server/routes/api.ts</li>
+          <li>📁 tests/server/*.test.ts</li>
+        </ul>
+      </div>
+
+      <div class="card agent-card flash">
+        <div>
+          <h2>🟠 1x <code>gemini-3.6-flash</code></h2>
+          <p class="sub"><strong>High-Token Format Registry, Magic Signatures &amp; Pure Data Engine</strong></p>
+          <p style="font-size: 0.85rem; color: #cbd5e1;">Strictly bounded by <code>src/shared/types.ts</code>. Uses high token throughput to generate the 120+ format catalog, binary magic-byte signatures, preset profiles, and pure zero-dependency data/markup converters.</p>
+        </div>
+        <ul class="code-list">
+          <li>📁 src/shared/registry/formats.catalog.ts</li>
+          <li>📁 src/shared/registry/signatures.ts</li>
+          <li>📁 src/shared/registry/matrix.ts</li>
+          <li>📁 src/shared/registry/presets.catalog.ts</li>
+          <li>📁 src/shared/converters/data-tabular.ts</li>
+          <li>📁 src/shared/converters/markup-doc.ts</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const pairEl = document.getElementById('simPair');
+    const sizeEl = document.getElementById('simSize');
+    const sizeValEl = document.getElementById('simSizeVal');
+    const ramEl = document.getElementById('simRam');
+    const coiEl = document.getElementById('simCoi');
+    const outEl = document.getElementById('simOutput');
+
+    function updateSim() {
+      const pair = pairEl.value;
+      const sizeMB = Number(sizeEl.value);
+      const ramGB = Number(ramEl.value);
+      const coi = coiEl.value === 'true';
+      sizeValEl.textContent = sizeMB;
+
+      const safeCapMB = Math.min(1536, ramGB * 220);
+      let tier = 'LOCAL_NATIVE';
+      let badgeClass = 'route-local';
+      let engine = 'canvas-2d';
+      let memMult = 3.0;
+      let lane = 'fast';
+      let reason = '';
+
+      if (pair === 'png-webp' || pair === 'svg-png') {
+        memMult = 3.5;
+        const estMB = Math.round(sizeMB * memMult);
+        if (estMB <= safeCapMB && sizeMB <= 250) {
+          tier = 'LOCAL_NATIVE';
+          badgeClass = 'route-local';
+          engine = 'OffscreenCanvas (Hardware Accelerated)';
+          reason = `100% private in-browser conversion via OffscreenCanvas. Estimated peak RAM (${estMB} MB) is well within device budget (${safeCapMB} MB). Zero bytes uploaded.`;
+        } else {
+          tier = 'SERVER_FALLBACK';
+          badgeClass = 'route-server';
+          engine = 'server-sharp-magick (lane: fast)';
+          reason = `Image size (${sizeMB} MB, ~${estMB} MB uncompressed bitmap) exceeds safe browser memory cap (${safeCapMB} MB) on a ${ramGB}GB device. Automatically escalated to Server Fast Lane.`;
+        }
+      } else if (pair === 'mp3-wav') {
+        memMult = 4.0;
+        const estMB = Math.round(sizeMB * memMult);
+        if (estMB <= safeCapMB && sizeMB <= 200) {
+          tier = 'LOCAL_NATIVE';
+          badgeClass = 'route-local';
+          engine = 'WebAudio OfflineAudioContext + PCM WAV Worker';
+          reason = `Decoded locally via browser WebAudio API and encoded to 16/24-bit PCM WAV inside a Web Worker (${estMB} MB peak RAM <= ${safeCapMB} MB cap).`;
+        } else {
+          tier = 'SERVER_FALLBACK';
+          badgeClass = 'route-server';
+          engine = 'server-ffmpeg (lane: media)';
+          reason = `Audio file (${sizeMB} MB) would expand to ~${estMB} MB PCM in browser memory (cap: ${safeCapMB} MB). Routed to Server Streaming FFmpeg pipeline.`;
+        }
+      } else if (pair === 'csv-json') {
+        memMult = 2.5;
+        const estMB = Math.round(sizeMB * memMult);
+        if (estMB <= safeCapMB && sizeMB <= 300) {
+          tier = 'LOCAL_PURE_JS';
+          badgeClass = 'route-local';
+          engine = 'pure-data-tabular Web Worker';
+          reason = `Processed locally in dedicated Data Web Worker with zero network upload (${estMB} MB estimated RAM).`;
+        } else {
+          tier = 'SERVER_FALLBACK';
+          badgeClass = 'route-server';
+          engine = 'server-data-engine (Streaming Transform)';
+          reason = `Large dataset (${sizeMB} MB) exceeds browser worker memory threshold (${safeCapMB} MB). Routed to streaming server transformer.`;
+        }
+      } else if (pair === 'mp4-gif' || pair === 'mp4-webm') {
+        memMult = 4.5;
+        const estMB = Math.round(sizeMB * memMult);
+        const maxVideoLocal = coi ? 250 : 60;
+        if (estMB <= safeCapMB && sizeMB <= maxVideoLocal) {
+          tier = 'LOCAL_WASM';
+          badgeClass = 'route-wasm';
+          engine = coi ? 'wasm-ffmpeg (Multi-Threaded SharedArrayBuffer)' : 'wasm-ffmpeg (Single-Threaded Worker)';
+          reason = `Transcoded locally in browser via lazy-loaded FFmpeg.wasm (${estMB} MB peak RAM <= ${safeCapMB} MB cap). ${coi ? 'Multi-threading active via COOP/COEP headers.' : 'Single-threaded mode (file <= 60 MB).'}`;
+        } else {
+          tier = 'SERVER_FALLBACK';
+          badgeClass = 'route-server';
+          engine = 'server-ffmpeg (lane: media)';
+          reason = !coi && sizeMB > 60
+            ? `Browser lacks SharedArrayBuffer (Cross-Origin Isolation) for ${sizeMB} MB video. Routed to native Server FFmpeg media lane for 10x faster transcoding.`
+            : `Video size (${sizeMB} MB, ~${estMB} MB WASM heap) exceeds safe device memory cap (${safeCapMB} MB). Routed to native Server FFmpeg media lane.`;
+        }
+      } else {
+        tier = 'SERVER_FALLBACK';
+        badgeClass = 'route-server';
+        engine = pair.includes('7z') ? 'server-archive-7z (lane: fast)' : 'server-libreoffice (lane: document)';
+        reason = `Format pair (${pair.toUpperCase()}) requires native layout/compression toolchains (Headless LibreOffice / 7z) not available in browser engines. Routed directly to isolated Server Queue.`;
+      }
+
+      outEl.innerHTML = `
+        <span class="sim-route-badge ${badgeClass}">${tier}</span>
+        <div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 4px;">Engine: <code>${engine}</code></div>
+        <div style="font-size: 0.84rem; color: #94a3b8;">${reason}</div>
+      `;
+    }
+
+    [pairEl, sizeEl, ramEl, coiEl].forEach(el => el.addEventListener('input', updateSim));
+    updateSim();
+  </script>
+</body>
+</html>
