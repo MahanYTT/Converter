@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OmniConvert — Hybrid Local-First &amp; Server-Fallback Universal Converter</title>
+  <link rel="stylesheet" href="/src/client/styles/main.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Top Header & Live Telemetry Bar -->
+    <header class="top-header">
+      <div class="brand">
+        <div class="brand-logo" aria-hidden="true">⚡</div>
+        <div>
+          <h1>OmniConvert <span class="version-pill">HYBRID ENGINE</span></h1>
+          <p class="subtitle">Local-first browser conversion with managed server fallback</p>
+        </div>
+      </div>
+
+      <div class="telemetry-strip" id="telemetry-strip">
+        <div class="telemetry-pill" id="device-cores-pill" title="Detected logical CPU cores">
+          <span class="dot dot-cyan"></span>
+          <span id="device-cores-text">CPU: --</span>
+        </div>
+        <div class="telemetry-pill" id="device-ram-pill" title="Safe browser memory ceiling">
+          <span class="dot dot-emerald"></span>
+          <span id="device-ram-text">RAM Cap: --</span>
+        </div>
+        <div class="telemetry-pill" id="device-coi-pill" title="Cross-Origin Isolation (SharedArrayBuffer) for multi-threaded WASM">
+          <span class="dot dot-amber" id="device-coi-dot"></span>
+          <span id="device-coi-text">COOP/COEP: --</span>
+        </div>
+        <div class="telemetry-pill" id="stats-counter-pill" title="Completed local vs server jobs">
+          <span class="dot dot-indigo"></span>
+          <span id="stats-counter-text">Local: 0 · Server: 0 · 0 KB saved</span>
+        </div>
+        <button type="button" class="server-health-btn" id="open-ops-drawer-btn" title="Open Server Lanes, Storage TTL & Worker Pool Console">
+          <span class="dot dot-amber" id="server-health-dot"></span>
+          <span id="server-health-text">Server: Probing...</span>
+          <span class="btn-tag">Ops Console</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="workspace">
+      <!-- Dropzone Card -->
+      <section class="dropzone-card" id="dropzone" tabindex="0" role="region" aria-label="File upload dropzone">
+        <input type="file" id="file-input" multiple hidden />
+        <div class="dropzone-content">
+          <div class="dropzone-icon" aria-hidden="true">📂</div>
+          <h2>Drop any files here to route &amp; convert</h2>
+          <p class="dropzone-hint">
+            Images (PNG, JPG, WebP, AVIF, BMP, ICO, SVG) · Audio (WAV, MP3, OGG, FLAC) · Data (JSON, CSV, YAML, XML, TOML, SQL) · Docs (MD, HTML, PDF, DOCX, XLSX, PPTX) · Archives (ZIP, GZ, 7Z)
+          </p>
+          <div class="dropzone-actions">
+            <button type="button" class="btn btn-primary" id="browse-files-btn">
+              Select Files
+            </button>
+            <button type="button" class="btn btn-emerald" id="load-demo-btn">
+              ✨ Load Demo Files (5 Tiers)
+            </button>
+          </div>
+          <div class="capability-pills" id="capability-pills"></div>
+        </div>
+      </section>
+
+      <!-- Batch Toolbar -->
+      <section class="batch-toolbar hidden" id="batch-toolbar">
+        <div class="batch-summary">
+          <strong id="queue-count-label">0 files in queue</strong>
+          <span class="muted" id="queue-route-breakdown"></span>
+        </div>
+        <div class="batch-actions">
+          <button type="button" class="btn btn-primary" id="convert-all-btn">
+            ⚡ Convert All Ready
+          </button>
+          <button type="button" class="btn btn-secondary hidden" id="download-zip-btn">
+            📦 Download All (ZIP)
+          </button>
+          <button type="button" class="btn btn-ghost" id="clear-completed-btn">
+            Clear Completed
+          </button>
+        </div>
+      </section>
+
+      <!-- Queue List -->
+      <section class="queue-list" id="queue-list" aria-live="polite"></section>
+
+      <!-- Empty State Guide -->
+      <section class="tier-overview" id="tier-overview">
+        <article class="tier-card tier-native">
+          <div class="tier-badge">Tier 1 · LOCAL_NATIVE</div>
+          <h3>OffscreenCanvas &amp; WebAudio</h3>
+          <p>Zero-upload hardware-accelerated image conversion (PNG, JPG, WebP, AVIF, BMP, ICO, SVG), EXIF stripping, and PCM WAV audio resampling &amp; normalization.</p>
+        </article>
+        <article class="tier-card tier-js">
+          <div class="tier-badge">Tier 2 · LOCAL_PURE_JS</div>
+          <h3>Data, PDF &amp; ZIP Workers</h3>
+          <p>Instant deterministic transformers for JSON, CSV, TSV, YAML, XML, TOML, INI, ENV, SQL, Markdown, HTML, client-side PDF generation, and ZIP/GZIP.</p>
+        </article>
+        <article class="tier-card tier-wasm">
+          <div class="tier-badge">Tier 3 · LOCAL_WASM</div>
+          <h3>Lazy Cached Sandboxes</h3>
+          <p>On-demand FFmpeg &amp; ImageMagick WebAssembly cached in CacheStorage with 512 MB worker recycling and automatic fallback if offline or over RAM budget.</p>
+        </article>
+        <article class="tier-card tier-server">
+          <div class="tier-badge">Tier 4 · SERVER_FALLBACK</div>
+          <h3>Isolated 3-Lane Pipeline</h3>
+          <p>Automatic escalation for LibreOffice DOCX/PPTX/XLSX, Pandoc, 7z/RAR, or files exceeding browser memory—protected by 15-min TTL &amp; disk quota breakers.</p>
+        </article>
+      </section>
+    </main>
+
+    <!-- Server & Worker Management Drawer -->
+    <aside class="ops-drawer-backdrop hidden" id="ops-drawer-backdrop" role="dialog" aria-modal="true" aria-labelledby="ops-drawer-title">
+      <div class="ops-drawer">
+        <div class="drawer-header">
+          <div>
+            <h2 id="ops-drawer-title">Server &amp; Worker Management Console</h2>
+            <p class="muted">Live execution lanes, ephemeral scratch storage, and client worker pool telemetry</p>
+          </div>
+          <button type="button" class="btn btn-ghost btn-icon" id="close-ops-drawer-btn" aria-label="Close console">✕</button>
+        </div>
+
+        <div class="drawer-body">
+          <!-- Client Worker Pool -->
+          <div class="ops-section">
+            <div class="ops-section-head">
+              <h3>Browser Worker Pool &amp; Memory Watchdog</h3>
+              <button type="button" class="btn btn-xs btn-secondary" id="recycle-workers-btn">Recycle Idle Slots</button>
+            </div>
+            <div class="metric-grid" id="client-worker-metrics"></div>
+            <div class="worker-slots-list" id="worker-slots-list"></div>
+          </div>
+
+          <!-- Server Lanes -->
+          <div class="ops-section">
+            <div class="ops-section-head">
+              <h3>Server Fallback Concurrency Lanes</h3>
+              <button type="button" class="btn btn-xs btn-secondary" id="refresh-health-btn">Refresh Telemetry</button>
+            </div>
+            <div class="lanes-grid" id="server-lanes-grid">
+              <div class="muted">Loading server lane telemetry...</div>
+            </div>
+          </div>
+
+          <!-- Ephemeral Scratch Storage -->
+          <div class="ops-section">
+            <div class="ops-section-head">
+              <h3>Ephemeral Scratch Storage &amp; TTL Sweeper</h3>
+              <button type="button" class="btn btn-xs btn-amber" id="trigger-sweep-btn">🧹 Trigger Immediate TTL Sweep</button>
+            </div>
+            <div id="server-storage-panel" class="storage-panel">
+              <div class="muted">Connecting to /api/v1/health...</div>
+            </div>
+          </div>
+
+          <!-- Detected Binaries -->
+          <div class="ops-section">
+            <h3>Detected Server Binaries Matrix</h3>
+            <div class="binaries-grid" id="server-binaries-grid"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Output Preview Modal -->
+    <div class="preview-backdrop hidden" id="preview-backdrop" role="dialog" aria-modal="true" aria-labelledby="preview-title">
+      <div class="preview-modal">
+        <div class="drawer-header">
+          <h3 id="preview-title">Converted Output Preview</h3>
+          <button type="button" class="btn btn-ghost btn-icon" id="close-preview-btn" aria-label="Close preview">✕</button>
+        </div>
+        <div class="preview-body" id="preview-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/client/ui/app.ts"></script>
+</body>
+</html>
