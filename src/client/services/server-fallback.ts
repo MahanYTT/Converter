@@ -111,7 +111,7 @@ export class ServerFallbackClient {
     onProgress?.({
       status: 'uploading-server',
       progressPercent: 10,
-      stageMessage: `Uploading ${(file.size / 1024).toFixed(1)} KB to managed server...`,
+      stageMessage: `Preparing high-precision conversion...`,
     });
 
     const uploadResp = await fetch(`${this.baseUrl}/api/v1/jobs`, {
@@ -144,7 +144,7 @@ export class ServerFallbackClient {
     onProgress?.({
       status: createdJob.status,
       progressPercent: Math.max(20, createdJob.progressPercent ?? 20),
-      stageMessage: createdJob.stageMessage || 'Queued on server lane...',
+      stageMessage: createdJob.stageMessage || 'Converting document...',
       jobRecord: createdJob,
     });
 
@@ -167,7 +167,7 @@ export class ServerFallbackClient {
       onProgress?.({
         status: 'processing-server',
         progressPercent: 95,
-        stageMessage: 'Downloading converted artifact...',
+        stageMessage: 'Finalizing output...',
         jobRecord: completedJob,
       });
 
@@ -249,7 +249,7 @@ export class ServerFallbackClient {
           onProgress?.({
             status: data.status,
             progressPercent: data.progressPercent ?? 50,
-            stageMessage: data.stageMessage || 'Processing on server...',
+            stageMessage: data.stageMessage || 'Converting document...',
             jobRecord: data,
           });
           if (data.status === 'completed' || data.status === 'failed' || data.status === 'cancelled') {
@@ -269,7 +269,7 @@ export class ServerFallbackClient {
           onProgress?.({
             status: job.status,
             progressPercent: job.progressPercent ?? 50,
-            stageMessage: job.stageMessage || 'Processing on server...',
+            stageMessage: job.stageMessage || 'Converting document...',
             jobRecord: job,
           });
           if (job.status === 'completed' || job.status === 'failed' || job.status === 'cancelled') {
