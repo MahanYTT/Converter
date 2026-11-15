@@ -1163,7 +1163,7 @@ export function getDefaultTargetForSource(sourceFormat: string): string {
 export const CLIENT_PRESETS: readonly ConversionPreset[] = [
   {
     id: 'img-web-optimized',
-    name: 'Web Optimized (WebP 82%)',
+    name: 'Web Optimized (WebP · 82%)',
     category: 'image',
     targetFormat: 'webp',
     description: 'High compression ratio with EXIF stripped for fast web delivery',
@@ -1171,10 +1171,10 @@ export const CLIENT_PRESETS: readonly ConversionPreset[] = [
   },
   {
     id: 'img-strip-exif',
-    name: 'Strip EXIF & Privacy Safe',
+    name: 'Social & Retina PNG',
     category: 'image',
-    targetFormat: 'jpg',
-    description: 'Re-encodes JPEG at 90% quality, removing GPS and camera metadata',
+    targetFormat: 'png',
+    description: 'High-quality lossy/lossless hybrid for crisp displays',
     options: { quality: 90, stripMetadata: true },
   },
   {
@@ -1187,7 +1187,7 @@ export const CLIENT_PRESETS: readonly ConversionPreset[] = [
   },
   {
     id: 'audio-studio-wav',
-    name: 'Studio WAV (48kHz Stereo)',
+    name: 'Studio Master WAV (48 kHz)',
     category: 'audio',
     targetFormat: 'wav',
     description: 'Lossless 48kHz stereo PCM with -1 dB peak normalization',
@@ -1195,7 +1195,7 @@ export const CLIENT_PRESETS: readonly ConversionPreset[] = [
   },
   {
     id: 'audio-voice-mono',
-    name: 'Voice Mono (16kHz WAV)',
+    name: 'Podcast / Voice Mono (16 kHz)',
     category: 'audio',
     targetFormat: 'wav',
     description: 'Downmixes to mono 16kHz normalized WAV for speech/AI transcription',
@@ -1203,7 +1203,7 @@ export const CLIENT_PRESETS: readonly ConversionPreset[] = [
   },
   {
     id: 'data-pretty-json',
-    name: 'Pretty JSON (2 spaces)',
+    name: 'Clean JSON (2-Space)',
     category: 'data',
     targetFormat: 'json',
     description: 'Formats structured data with clean 2-space indentation',
@@ -1211,7 +1211,7 @@ export const CLIENT_PRESETS: readonly ConversionPreset[] = [
   },
   {
     id: 'data-sql-seed',
-    name: 'SQL INSERT Script',
+    name: 'SQL Database Seed',
     category: 'data',
     targetFormat: 'sql',
     description: 'Converts tabular dataset into portable SQL INSERT statements',
@@ -1219,7 +1219,7 @@ export const CLIENT_PRESETS: readonly ConversionPreset[] = [
   },
   {
     id: 'doc-a4-pdf',
-    name: 'A4 Printable PDF',
+    name: 'Print-Ready PDF (A4)',
     category: 'document',
     targetFormat: 'pdf',
     description: 'Typesets document or table onto clean A4 pages locally in browser',

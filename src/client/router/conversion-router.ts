@@ -76,7 +76,7 @@ export class ConversionRouter {
       memoryMultiplier: 3.0,
       maxLocalFileSizeMB: 0,
       serverLane,
-      notes: `No client conversion rule for ${sourceFormat.toUpperCase()} -> ${targetFormat.toUpperCase()}; routed to managed server pipeline.`,
+      notes: `Preparing high-precision conversion...`,
     };
   }
 
@@ -222,7 +222,7 @@ export class ConversionRouter {
         fallbackEngine: null,
         estimatedPeakMemoryMB,
         serverLane: rule.serverLane,
-        reason: `Server execution explicitly selected via Force Server mode (lane: ${rule.serverLane}).`,
+        reason: `High-precision conversion explicitly selected.`,
         warnings,
       };
     }
@@ -264,17 +264,16 @@ export class ConversionRouter {
 
       let reason: string;
       if (tier === 'LOCAL_NATIVE') {
-        reason = `Zero-upload browser native execution (${engine}) — ~${estimatedPeakMemoryMB.toFixed(1)} MB est. RAM within ${device.safeBrowserMemoryCapMB} MB cap.`;
+        reason = `Processing securely on your device (hardware accelerated) — 0 KB uploaded.`;
       } else if (tier === 'LOCAL_PURE_JS') {
-        reason = `Deterministic in-browser worker (${engine}) — 0 KB uploaded, ~${estimatedPeakMemoryMB.toFixed(1)} MB est. RAM.`;
+        reason = `Processing securely on your device — 0 KB uploaded.`;
       } else if (tier === 'LOCAL_WASM') {
-        reason = `Cached lazy WebAssembly sandbox (${engine}) — ~${estimatedPeakMemoryMB.toFixed(1)} MB est. RAM${device.crossOriginIsolated ? ' with SharedArrayBuffer multi-threading' : ''}.`;
+        reason = `Processing securely on your device (advanced engine) — 0 KB uploaded.`;
       } else {
         reason =
           skipReasons.length > 0
-            ? `Escalated to managed server (${serverEngine}, lane: ${rule.serverLane}): ${skipReasons.join('; ')}.`
-            : rule.notes ??
-              `${resolvedSource.toUpperCase()} -> ${resolvedTarget.toUpperCase()} requires managed server engine (${serverEngine}, lane: ${rule.serverLane}).`;
+            ? `Preparing high-precision conversion...`
+            : rule.notes ?? `Preparing high-precision conversion...`;
       }
 
       if (!isLocal && skipReasons.length > 0) {
@@ -317,8 +316,8 @@ export class ConversionRouter {
       serverLane: rule.serverLane,
       reason:
         skipReasons.length > 0
-          ? `Escalated to server (${serverEngine}): ${skipReasons.join('; ')}.`
-          : `Routed to managed server pipeline (${serverEngine}, lane: ${rule.serverLane}).`,
+          ? `Preparing high-precision conversion...`
+          : `Preparing high-precision conversion...`,
       warnings: [...warnings, ...skipReasons],
     };
   }
@@ -338,10 +337,10 @@ export class ConversionRouter {
       requiresUpload: true,
       fallbackTier: null,
       fallbackEngine: null,
-      reason: `Auto-escalated to server (${serverEngine}, lane: ${previousDecision.serverLane}) after local ${previousDecision.selectedTier} failure: ${detail}`,
+      reason: `Transparently routing to high-precision engine after local issue...`,
       warnings: [
         ...previousDecision.warnings,
-        `Local ${previousDecision.selectedEngine} failed (${detail}); transparently recovered via Server Fallback.`,
+        `Local processing encountered an issue (${detail}); transparently recovered via high-precision engine.`,
       ],
     };
   }

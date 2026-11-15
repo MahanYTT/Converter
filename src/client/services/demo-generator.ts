@@ -50,39 +50,42 @@ async function generateDemoPng(): Promise<File> {
       'image/png',
     );
   });
-  return new File([blob], 'omniconvert-banner.png', { type: 'image/png' });
+  return new File([blob], 'studio-portrait.png', { type: 'image/png' });
 }
 
 function generateDemoCsv(): File {
   const csv = [
-    'quarter,region,local_jobs,server_jobs,bandwidth_saved_mb,avg_latency_ms',
-    '2026-Q1,North America,48210,3120,18420.5,42',
-    '2026-Q1,Europe,39400,2480,15110.2,39',
-    '2026-Q2,North America,61540,3890,24390.8,37',
-    '2026-Q2,Europe,52190,2950,20140.0,35',
-    '2026-Q3,Asia Pacific,44880,2610,17650.4,41',
-    '2026-Q4,Global,78920,4110,31820.9,33',
-  ].join('\n');
-  return new File([csv], 'quarterly-metrics.csv', { type: 'text/csv' });
+    'id,sku,product_name,category,price,stock,is_active',
+    '101,PROD-1001,Wireless Noise-Canceling Headphones,Audio,299.99,450,true',
+    '102,PROD-1002,Mechanical Keyboard - Cherry MX Blue,Accessories,149.50,120,true',
+    '103,PROD-1003,Ergonomic Office Chair (Mesh),Furniture,499.00,85,true',
+    '104,PROD-1004,27-inch 4K IPS Monitor,Displays,399.00,210,true',
+    '105,PROD-1005,USB-C Docking Station (100W PD),Accessories,89.99,500,true',
+    '106,PROD-1006,Bluetooth Optical Mouse,Accessories,45.00,800,false',
+  ].join('\\n');
+  return new File([csv], 'product-catalog.csv', { type: 'text/csv' });
 }
 
 function generateDemoMarkdown(): File {
   const md = [
-    '# OmniConvert Hybrid Architecture Report',
+    '# OmniConvert v2.0 Release Notes',
     '',
-    '## Executive Summary',
-    'OmniConvert routes 85-95% of file conversions directly inside the browser using OffscreenCanvas, WebAudio, CompressionStream, and deterministic Web Workers.',
+    '## What\\'s New in this Release',
+    'We are excited to announce the latest major update to the **OmniConvert Engine**.',
     '',
-    '## Execution Tiers',
-    '- **LOCAL_NATIVE**: Hardware-accelerated Canvas 2D and WebAudio PCM pipelines with zero upload.',
-    '- **LOCAL_PURE_JS**: Deterministic JSON, CSV, YAML, XML, TOML, SQL, ZIP, and PDF generators.',
-    '- **LOCAL_WASM**: Lazy-cached FFmpeg & ImageMagick WebAssembly sandboxes.',
-    '- **SERVER_FALLBACK**: Managed 3-lane server pipeline for LibreOffice DOCX/PPTX/XLSX and heavy media.',
+    '### Key Features',
+    '- **Invisible Hybrid Execution**: Users seamlessly get hardware-accelerated local conversion or high-precision server fallbacks without being asked.',
+    '- **Enhanced Privacy**: Local conversions ensure *0 KB* of data leaves the device.',
+    '- **Studio Quality Audio**: Support for downmixing, peak normalization, and resampling.',
     '',
-    '## Privacy Guarantee',
-    'Local jobs transfer **0 KB** over the network. Server fallback jobs run inside quarantined scratch directories with a strict 15-minute TTL.',
-  ].join('\n');
-  return new File([md], 'architecture-notes.md', { type: 'text/markdown' });
+    '### Fixes & Improvements',
+    '1. Improved memory management for heavy PNG/WEBP exports.',
+    '2. Added clean 2-space indentation presets for JSON.',
+    '3. Optimized LibreOffice and Pandoc integration for document rendering.',
+    '',
+    '*Thank you for using OmniConvert!*'
+  ].join('\\n');
+  return new File([md], 'release-notes.md', { type: 'text/markdown' });
 }
 
 function generateDemoWav(): File {
@@ -106,7 +109,7 @@ function generateDemoWav(): File {
   }
 
   const wavBytes = encodeChannelsToWav([left, right], sampleRate, { bitDepth: 16 });
-  return new File([wavBytes.buffer as ArrayBuffer], 'synth-chord.wav', { type: 'audio/wav' });
+  return new File([wavBytes.buffer as ArrayBuffer], 'ambient-synth.wav', { type: 'audio/wav' });
 }
 
 async function generateDemoDocx(): Promise<File> {
@@ -126,8 +129,8 @@ async function generateDemoDocx(): Promise<File> {
   const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:body>
-    <w:p><w:r><w:t>OmniConvert Sample Office Document</w:t></w:r></w:p>
-    <w:p><w:r><w:t>This DOCX triggers Tier 4 Managed Server Fallback (lane: document).</w:t></w:r></w:p>
+    <w:p><w:r><w:t>Executive Brief</w:t></w:r></w:p>
+    <w:p><w:r><w:t>This confidential document outlines the strategic priorities for Q4 2026.</w:t></w:r></w:p>
   </w:body>
 </w:document>`;
 
@@ -137,7 +140,7 @@ async function generateDemoDocx(): Promise<File> {
     { name: 'word/document.xml', data: enc.encode(documentXml) },
   ]);
 
-  return new File([zipBytes.buffer as ArrayBuffer], 'board-deck-sample.docx', {
+  return new File([zipBytes.buffer as ArrayBuffer], 'executive-brief.docx', {
     type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   });
 }

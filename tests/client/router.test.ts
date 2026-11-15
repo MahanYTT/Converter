@@ -160,7 +160,7 @@ describe('ConversionRouter', () => {
     assert.equal(escalatedVideo.selectedEngine, 'server-ffmpeg');
     assert.equal(escalatedVideo.serverLane, 'media');
     assert.equal(escalatedVideo.requiresUpload, true);
-    assert.match(escalatedVideo.reason, /SharedArrayBuffer|COOP/i);
+    assert.match(escalatedVideo.warnings.join(' '), /SharedArrayBuffer|COOP/i);
   });
 
   it('escalates to SERVER_FALLBACK when estimatedPeakMemoryMB exceeds safeBrowserMemoryCapMB', () => {
@@ -181,7 +181,7 @@ describe('ConversionRouter', () => {
     );
     assert.equal(decision.selectedTier, 'SERVER_FALLBACK');
     assert.equal(decision.isLocal, false);
-    assert.match(decision.reason, /RAM|memory/i);
+    assert.match(decision.warnings.join(' '), /RAM|memory/i);
   });
 
   it('honors forceExecutionMode SERVER_ONLY and LOCAL_ONLY', () => {
@@ -241,7 +241,6 @@ describe('ConversionRouter', () => {
     assert.equal(escalated.selectedEngine, 'server-ffmpeg');
     assert.equal(escalated.isLocal, false);
     assert.equal(escalated.requiresUpload, true);
-    assert.match(escalated.reason, /WASM OOM heap exhausted/);
     assert.ok(escalated.warnings.some((w) => w.includes('WASM OOM heap exhausted')));
   });
 });
