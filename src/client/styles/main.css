@@ -188,25 +188,14 @@ body {
   width: 28px;
   height: 28px;
   border-radius: var(--radius-sm);
-  background: var(--primary);
-  color: var(--primary-ink);
   display: grid;
   place-items: center;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.15) inset, var(--shadow-xs);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
   transition: transform 0.16s var(--ease-out);
 }
 .brand:hover .brand-mark {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm);
-  background: var(--primary);
-  color: var(--primary-ink);
-  display: grid;
-  place-items: center;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.15) inset, var(--shadow-xs);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
-  transition: transform 0.16s var(--ease-out);
+  transform: translateY(-1px);
 }
 .brand-mark-svg {
   width: 16px;
@@ -706,6 +695,78 @@ textarea:focus {
   border-color: var(--accent-wasm-border);
   color: var(--accent-wasm);
 }
+/* Category Color-Coding (macOS / CloudConvert-style visual indexing) */
+.fmt-pill[data-cat="image"],
+.fmt-pill[data-cat="vector"] {
+  background: rgba(13, 148, 136, 0.1);
+  border-color: rgba(13, 148, 136, 0.28);
+  color: #0f766e;
+}
+.file-thumb[data-cat="image"],
+.file-thumb[data-cat="vector"] {
+  border-color: rgba(13, 148, 136, 0.28);
+  color: #0d9488;
+}
+.fmt-pill[data-cat="audio"] {
+  background: rgba(217, 119, 6, 0.1);
+  border-color: rgba(217, 119, 6, 0.28);
+  color: #b45309;
+}
+.file-thumb[data-cat="audio"] {
+  background: rgba(217, 119, 6, 0.08);
+  border-color: rgba(217, 119, 6, 0.26);
+  color: #d97706;
+}
+.fmt-pill[data-cat="document"],
+.fmt-pill[data-cat="ebook"] {
+  background: rgba(224, 68, 40, 0.09);
+  border-color: rgba(224, 68, 40, 0.28);
+  color: #c8361c;
+}
+.file-thumb[data-cat="document"],
+.file-thumb[data-cat="ebook"] {
+  background: rgba(224, 68, 40, 0.07);
+  border-color: rgba(224, 68, 40, 0.24);
+  color: #e04428;
+}
+.fmt-pill[data-cat="data"] {
+  background: rgba(37, 99, 235, 0.09);
+  border-color: rgba(37, 99, 235, 0.26);
+  color: #1d4ed8;
+}
+.file-thumb[data-cat="data"] {
+  background: rgba(37, 99, 235, 0.07);
+  border-color: rgba(37, 99, 235, 0.24);
+  color: #2563eb;
+}
+.fmt-pill[data-cat="archive"] {
+  background: rgba(124, 58, 237, 0.09);
+  border-color: rgba(124, 58, 237, 0.26);
+  color: #6d28d9;
+}
+.file-thumb[data-cat="archive"] {
+  background: rgba(124, 58, 237, 0.07);
+  border-color: rgba(124, 58, 237, 0.24);
+  color: #7c3aed;
+}
+.fmt-pill[data-cat="video"] {
+  background: rgba(225, 29, 72, 0.09);
+  border-color: rgba(225, 29, 72, 0.26);
+  color: #be123c;
+}
+.file-thumb[data-cat="video"] {
+  background: rgba(225, 29, 72, 0.07);
+  border-color: rgba(225, 29, 72, 0.24);
+  color: #e11d48;
+}
+[data-theme="dark"] .fmt-pill[data-cat="image"],
+[data-theme="dark"] .fmt-pill[data-cat="vector"] { color: #2dd4bf; }
+[data-theme="dark"] .fmt-pill[data-cat="audio"] { color: #fbbf24; }
+[data-theme="dark"] .fmt-pill[data-cat="document"],
+[data-theme="dark"] .fmt-pill[data-cat="ebook"] { color: #fb7185; }
+[data-theme="dark"] .fmt-pill[data-cat="data"] { color: #60a5fa; }
+[data-theme="dark"] .fmt-pill[data-cat="archive"] { color: #a78bfa; }
+[data-theme="dark"] .fmt-pill[data-cat="video"] { color: #f43f5e; }
 /* Conversion Arrow & Target Controls */
 .format-arrow-flow,
 .job-convert-col {
@@ -1300,30 +1361,40 @@ textarea:focus {
 }
 .spec-strip {
   display: grid;
-  grid-template-columns: 40px 1fr 2fr;
-  gap: 16px;
-  padding: 16px 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  padding: 20px 4px 4px;
   border-top: 1px solid var(--border);
-  align-items: baseline;
+  margin-top: 4px;
+}
+.spec-col {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 .spec-num {
   font-family: var(--font-mono);
-  font-size: 0.85rem;
+  font-size: 0.74rem;
   color: var(--accent-brand);
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.04em;
 }
-.spec-title {
-  font-size: 0.95rem;
-  font-weight: 500;
+.spec-col strong {
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--text);
 }
-.spec-body {
-  font-size: 0.85rem;
+.spec-col p {
+  font-size: 0.81rem;
   color: var(--text-secondary);
   line-height: 1.5;
 }
-.spec-item {
-  display: contents;
+@media (max-width: 760px) {
+  .spec-strip {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 }
 
 
