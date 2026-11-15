@@ -114,16 +114,16 @@ export class ServerFallbackClient {
       stageMessage: `Uploading ${(file.size / 1024).toFixed(1)} KB to managed server...`,
     });
 
-    const form = new FormData();
-    form.append('file', file, filename);
-    form.append('filename', filename);
-    form.append('sourceFormat', sourceFormat);
-    form.append('targetFormat', targetFormat);
-    form.append('options', JSON.stringify(options));
-
     const uploadResp = await fetch(`${this.baseUrl}/api/v1/jobs`, {
       method: 'POST',
-      body: form,
+      headers: {
+        'X-File-Name': encodeURIComponent(filename),
+        'X-Source-Format': sourceFormat,
+        'X-Target-Format': targetFormat,
+        'X-Options-Json': JSON.stringify(options),
+        'Content-Type': file.type || 'application/octet-stream',
+      },
+      body: file,
       signal,
     });
 
@@ -284,10 +284,19 @@ export class ServerFallbackClient {
             `${this.baseUrl}/api/v1/jobs/${encodeURIComponent(jobId)}/events`,
           );
           eventSource.onmessage = (evt) => handleUpdate(evt.data);
-          eventSource.addEventListener('progress', (evt) => handleUpdate((evt as MessageEvent).data));
-          eventSource.addEventListener('status', (evt) => handleUpdate((evt as MessageEvent).data));
-          eventSource.addEventListener('completed', (evt) => handleUpdate((evt as MessageEvent).data));
-          eventSource.addEventListener('failed', (evt) => handleUpdate((evt as MessageEvent).data));
+          const sseEvents = [
+            'progress',
+            'status',
+            'completed',
+            'failed',
+            'job:updated',
+            'job:progress',
+            'job:completed',
+            'job:failed',
+          ];
+          for (const evName of sseEvents) {
+            eventSource.addEventListener(evName, (evt) => handleUpdate((evt as MessageEvent).data));
+          }
           eventSource.onerror = () => {
             if (eventSource) {
               eventSource.close();

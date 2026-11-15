@@ -442,10 +442,15 @@ export class ServerApp {
         const text = content.toString('utf-8');
         try {
           if (typeof stripTypeScriptTypes === 'function') {
-            content = Buffer.from(stripTypeScriptTypes(text));
+            const stripped = stripTypeScriptTypes(text) as any;
+            let jsCode = typeof stripped === 'string' ? stripped : (stripped?.code || text);
+            jsCode = jsCode
+              .replace(/\b(private|protected|public|readonly)\s+/g, '')
+              .replace(/!\s*;/g, ';');
+            content = Buffer.from(jsCode);
           }
-        } catch {
-          // keep original if strip fails
+        } catch (e) {
+          console.error('TS strip error:', e);
         }
         res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
       } else if (ext === '.js' || ext === '.mjs') {

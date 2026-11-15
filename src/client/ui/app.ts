@@ -44,6 +44,8 @@ interface BatchQueueItem {
   durationMs?: number;
   errorMessage?: string;
   abortController?: AbortController;
+  expandedSettings?: boolean;
+  thumbnailUrl?: string;
   output?: {
     blob: Blob;
     bytes: Uint8Array;
@@ -69,54 +71,63 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
-function tierBadgeMeta(decision: RoutingDecision): { label: string; icon: string } {
+function tierBadgeMeta(decision: RoutingDecision): { label: string; tierClass: string; icon: string } {
   switch (decision.selectedTier) {
     case 'LOCAL_NATIVE':
-      return { label: 'LOCAL_NATIVE (0 KB upload)', icon: '⚡' };
+      return { label: 'On-device', tierClass: 'local', icon: '✓' };
     case 'LOCAL_PURE_JS':
-      return { label: 'LOCAL_PURE_JS (0 KB upload)', icon: '🧠' };
+      return { label: 'Worker', tierClass: 'local', icon: '✓' };
     case 'LOCAL_WASM':
-      return { label: 'LOCAL_WASM (Browser Sandbox)', icon: '🧩' };
+      return { label: 'WASM', tierClass: 'wasm', icon: '🧩' };
     case 'SERVER_FALLBACK':
-      return { label: `SERVER_FALLBACK (lane: ${decision.serverLane})`, icon: '☁️' };
+      return { label: `Server (${decision.serverLane})`, tierClass: 'server', icon: '☁' };
   }
 }
 
 class OmniConvertApp {
-  private readonly router = new ConversionRouter();
-  private readonly serverClient = new ServerFallbackClient();
-  private device!: DeviceCapabilityProfile;
-  private workerPool!: WorkerPool;
-  private items: BatchQueueItem[] = [];
-  private serverHealth: ServerHealthMetrics | null = null;
-  private localCompletedCount = 0;
-  private serverCompletedCount = 0;
-  private bandwidthSavedBytes = 0;
+  router = new ConversionRouter();
+  serverClient = new ServerFallbackClient();
+  device;
+  workerPool;
+  items = [];
+  serverHealth = null;
+  localCompletedCount = 0;
+  serverCompletedCount = 0;
+  bandwidthSavedBytes = 0;
 
   // DOM elements
-  private readonly dropzone = document.getElementById('dropzone')!;
-  private readonly fileInput = document.getElementById('file-input') as HTMLInputElement;
-  private readonly queueList = document.getElementById('queue-list')!;
-  private readonly batchToolbar = document.getElementById('batch-toolbar')!;
-  private readonly tierOverview = document.getElementById('tier-overview')!;
-  private readonly queueCountLabel = document.getElementById('queue-count-label')!;
-  private readonly queueRouteBreakdown = document.getElementById('queue-route-breakdown')!;
-  private readonly downloadZipBtn = document.getElementById('download-zip-btn') as HTMLButtonElement;
-  private readonly opsBackdrop = document.getElementById('ops-drawer-backdrop')!;
-  private readonly previewBackdrop = document.getElementById('preview-backdrop')!;
-  private readonly previewTitle = document.getElementById('preview-title')!;
-  private readonly previewBody = document.getElementById('preview-body')!;
+  dropzone = document.getElementById('dropzone');
+  fileInput = document.getElementById('file-input');
+  queueList = document.getElementById('queue-list');
+  batchToolbar = document.getElementById('batch-toolbar');
+  tierOverview = document.getElementById('tier-overview');
+  heroHeader = document.getElementById('hero-header');
+  queueCountLabel = document.getElementById('queue-count-label');
+  queueRouteBreakdown = document.getElementById('queue-route-breakdown');
+  downloadZipBtn = document.getElementById('download-zip-btn');
+  batchTargetSelect = document.getElementById('batch-target-select');
+
+  opsBackdrop = document.getElementById('ops-drawer-backdrop');
+  previewBackdrop = document.getElementById('preview-backdrop');
+  previewTitle = document.getElementById('preview-title');
+  previewBody = document.getElementById('preview-body');
+
+  pasteModalBackdrop = document.getElementById('paste-modal-backdrop');
+  formatsModalBackdrop = document.getElementById('formats-modal-backdrop');
+  formatsExplorerList = document.getElementById('formats-explorer-list');
 
   async init(): Promise<void> {
+    this.initTheme();
     this.device = await DeviceProfiler.detect();
     this.workerPool = new WorkerPool(this.device.hardwareConcurrency);
     this.workerPool.subscribe((stats) => this.renderWorkerTelemetry(stats));
 
     this.renderDeviceTelemetry();
+    this.renderLandingCategoryTabs('image');
+    this.populateBatchTargetDropdown();
     this.bindEvents();
     await this.refreshServerHealth();
 
-    // Periodic health polling when ops drawer is open or every 15s
     setInterval(() => {
       if (!this.opsBackdrop.classList.contains('hidden')) {
         void this.refreshServerHealth();
@@ -124,10 +135,38 @@ class OmniConvertApp {
     }, 5000);
   }
 
+  private initTheme(): void {
+    const saved = localStorage.getItem('omniconvert-theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const theme = saved || (prefersDark ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+    this.updateThemeIcons(theme);
+  }
+
+  private updateThemeIcons(theme: string): void {
+    const moon = document.getElementById('theme-icon-moon');
+    const sun = document.getElementById('theme-icon-sun');
+    if (theme === 'dark') {
+      moon?.classList.add('hidden');
+      sun?.classList.remove('hidden');
+    } else {
+      moon?.classList.remove('hidden');
+      sun?.classList.add('hidden');
+    }
+  }
+
+  private toggleTheme(): void {
+    const current = document.documentElement.getAttribute('data-theme') || 'light';
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('omniconvert-theme', next);
+    this.updateThemeIcons(next);
+  }
+
   private bindEvents(): void {
-    document.getElementById('browse-files-btn')?.addEventListener('click', () => {
-      this.fileInput.click();
-    });
+    document.getElementById('theme-toggle-btn')?.addEventListener('click', () => this.toggleTheme());
+
+    document.getElementById('browse-files-btn')?.addEventListener('click', () => this.fileInput.click());
 
     this.fileInput.addEventListener('change', () => {
       if (this.fileInput.files && this.fileInput.files.length > 0) {
@@ -140,7 +179,7 @@ class OmniConvertApp {
       const btn = document.getElementById('load-demo-btn') as HTMLButtonElement;
       btn.disabled = true;
       const oldText = btn.textContent;
-      btn.textContent = 'Generating sample files...';
+      btn.textContent = 'Generating sample batch...';
       try {
         const files = await createDemoSampleFiles();
         await this.ingestFiles(files);
@@ -148,6 +187,46 @@ class OmniConvertApp {
         btn.disabled = false;
         btn.textContent = oldText;
       }
+    });
+
+    // Paste Modal
+    document.getElementById('paste-text-btn')?.addEventListener('click', () => {
+      this.pasteModalBackdrop.classList.remove('hidden');
+    });
+    document.getElementById('close-paste-modal-btn')?.addEventListener('click', () => {
+      this.pasteModalBackdrop.classList.add('hidden');
+    });
+    document.getElementById('cancel-paste-btn')?.addEventListener('click', () => {
+      this.pasteModalBackdrop.classList.add('hidden');
+    });
+    document.getElementById('add-paste-btn')?.addEventListener('click', () => {
+      const textarea = document.getElementById('paste-textarea') as HTMLTextAreaElement;
+      const fmtSelect = document.getElementById('paste-source-format') as HTMLSelectElement;
+      const nameInput = document.getElementById('paste-filename') as HTMLInputElement;
+
+      const text = textarea.value.trim();
+      if (!text) return;
+      const ext = fmtSelect.value;
+      const name = nameInput.value.trim() || `snippet.${ext}`;
+      const blob = new Blob([text], { type: 'text/plain' });
+      const file = new File([blob], name, { type: 'text/plain' });
+
+      void this.ingestFiles([file]);
+      textarea.value = '';
+      this.pasteModalBackdrop.classList.add('hidden');
+    });
+
+    // Formats Modal
+    document.getElementById('open-formats-btn')?.addEventListener('click', () => {
+      this.renderFormatsExplorer();
+      this.formatsModalBackdrop.classList.remove('hidden');
+    });
+    document.getElementById('close-formats-modal-btn')?.addEventListener('click', () => {
+      this.formatsModalBackdrop.classList.add('hidden');
+    });
+    document.getElementById('formats-search-input')?.addEventListener('input', (e) => {
+      const query = (e.target as HTMLInputElement).value.toLowerCase();
+      this.renderFormatsExplorer(query);
     });
 
     // Drag and drop
@@ -172,6 +251,7 @@ class OmniConvertApp {
       }
     });
 
+    // Batch Bar Actions
     document.getElementById('convert-all-btn')?.addEventListener('click', () => {
       void this.convertAllReady();
     });
@@ -180,6 +260,7 @@ class OmniConvertApp {
       for (const item of this.items) {
         if (item.status === 'completed' || item.status === 'cancelled') {
           if (item.output?.objectUrl) URL.revokeObjectURL(item.output.objectUrl);
+          if (item.thumbnailUrl) URL.revokeObjectURL(item.thumbnailUrl);
         }
       }
       this.items = this.items.filter((i) => i.status !== 'completed' && i.status !== 'cancelled');
@@ -188,6 +269,30 @@ class OmniConvertApp {
 
     this.downloadZipBtn.addEventListener('click', () => {
       void this.downloadAllAsZip();
+    });
+
+    this.batchTargetSelect.addEventListener('change', () => {
+      const target = this.batchTargetSelect.value;
+      if (!target) return;
+      for (const item of this.items) {
+        const compatible = getCompatibleTargets(item.sourceFormat);
+        if (compatible.some((f) => f.id === target)) {
+          item.targetFormat = target;
+          item.presetId = '';
+          this.recomputeRouting(item);
+        }
+      }
+      this.renderQueue();
+    });
+
+    // Landing Category Tabs
+    document.getElementById('landing-category-tabs')?.addEventListener('click', (e) => {
+      const target = (e.target as HTMLElement).closest<HTMLButtonElement>('.tab-btn');
+      if (!target) return;
+      document.querySelectorAll('#landing-category-tabs .tab-btn').forEach((b) => b.classList.remove('active'));
+      target.classList.add('active');
+      const cat = target.dataset.cat as FormatCategory;
+      this.renderLandingCategoryTabs(cat);
     });
 
     // Ops Drawer
@@ -214,15 +319,11 @@ class OmniConvertApp {
       const btn = document.getElementById('trigger-sweep-btn') as HTMLButtonElement;
       if (res) {
         btn.textContent = `✓ Purged ${res.purgedDirs ?? 0} dirs`;
-        setTimeout(() => {
-          btn.textContent = '🧹 Trigger Immediate TTL Sweep';
-        }, 2500);
+        setTimeout(() => { btn.textContent = 'Run TTL sweep'; }, 2500);
         await this.refreshServerHealth();
       } else {
         btn.textContent = 'Server Offline';
-        setTimeout(() => {
-          btn.textContent = '🧹 Trigger Immediate TTL Sweep';
-        }, 2000);
+        setTimeout(() => { btn.textContent = 'Run TTL sweep'; }, 2000);
       }
     });
 
@@ -240,44 +341,112 @@ class OmniConvertApp {
   }
 
   private renderDeviceTelemetry(): void {
-    document.getElementById('device-cores-text')!.textContent =
-      `CPU: ${this.device.hardwareConcurrency} cores`;
-    document.getElementById('device-ram-text')!.textContent =
-      `RAM Cap: ${this.device.safeBrowserMemoryCapMB} MB (${this.device.deviceMemoryGB} GB)`;
+    document.getElementById('device-cores-text')!.textContent = `${this.device.hardwareConcurrency} cores`;
+    document.getElementById('device-ram-text')!.textContent = `${this.device.safeBrowserMemoryCapMB} MB (${this.device.deviceMemoryGB} GB)`;
 
-    const coiText = document.getElementById('device-coi-text')!;
-    const coiDot = document.getElementById('device-coi-dot')!;
-    if (this.device.crossOriginIsolated) {
-      coiText.textContent = 'SharedArrayBuffer: Active';
-      coiDot.className = 'dot dot-emerald';
-    } else {
-      coiText.textContent = 'SharedArrayBuffer: Off';
-      coiDot.className = 'dot dot-amber';
+    const coiText = document.getElementById('device-coi-text');
+    if (coiText) {
+      coiText.textContent = this.device.crossOriginIsolated ? 'Active' : 'Single-thread';
     }
 
-    const capPills = document.getElementById('capability-pills')!;
-    const chips = [
-      { label: 'OffscreenCanvas', ok: this.device.supportsOffscreenCanvas },
-      { label: 'WebAudio PCM', ok: this.device.supportsWebAudio },
-      { label: 'CompressionStream', ok: this.device.supportsCompressionStream },
-      { label: 'OPFS Storage', ok: this.device.supportsOPFS },
-      { label: 'WebCodecs', ok: this.device.supportsWebCodecs },
-      {
-        label: `Canvas Encoders: ${this.device.supportedCanvasEncodeMimes.map((m) => m.replace('image/', '').toUpperCase()).join(', ')}`,
-        ok: this.device.supportedCanvasEncodeMimes.length > 0,
-      },
-    ];
-    capPills.innerHTML = chips
-      .map((c) => `<span class="cap-chip ${c.ok ? 'ok' : ''}">${c.ok ? '✓' : '○'} ${escapeHtml(c.label)}</span>`)
-      .join('');
+    const footerText = document.getElementById('footer-device-summary');
+    if (footerText) {
+      footerText.textContent = `${this.device.hardwareConcurrency} Cores · ${this.device.safeBrowserMemoryCapMB} MB Safe Budget · ${this.device.crossOriginIsolated ? 'SharedArrayBuffer Active' : 'Single-thread'}`;
+    }
+
+    const capPills = document.getElementById('capability-pills');
+    if (capPills) {
+      const chips = [
+        { label: 'OffscreenCanvas', ok: this.device.supportsOffscreenCanvas },
+        { label: 'WebAudio PCM', ok: this.device.supportsWebAudio },
+        { label: 'CompressionStream', ok: this.device.supportsCompressionStream },
+        { label: 'OPFS Storage', ok: this.device.supportsOPFS },
+        { label: 'WebCodecs', ok: this.device.supportsWebCodecs },
+        {
+          label: `Canvas Encoders: ${this.device.supportedCanvasEncodeMimes.map((m) => m.replace('image/', '').toUpperCase()).join(', ')}`,
+          ok: this.device.supportedCanvasEncodeMimes.length > 0,
+        },
+      ];
+      capPills.innerHTML = chips
+        .map((c) => `<span class="cap-chip ${c.ok ? 'ok' : ''}">${c.ok ? '✓' : '○'} ${escapeHtml(c.label)}</span>`)
+        .join('');
+    }
 
     this.updateTopCounters();
+  }
+
+  private renderLandingCategoryTabs(category: FormatCategory): void {
+    const container = document.getElementById('landing-format-chips');
+    if (!container) return;
+    const formats = CLIENT_FORMATS.filter((f) => f.category === category);
+    container.innerHTML = formats
+      .map((f) => {
+        let badgeClass = 'local';
+        if (!f.browserSupport.canEncodeNative && !f.browserSupport.canProcessPureJs) {
+          badgeClass = f.browserSupport.canProcessWasm ? 'wasm' : 'server';
+        }
+        return `
+          <div class="format-chip">
+            <i class="legend-dot ${badgeClass}"></i>
+            <strong>${escapeHtml(f.label)}</strong>
+            <span>${escapeHtml(f.name)}</span>
+          </div>
+        `;
+      })
+      .join('');
+  }
+
+  private populateBatchTargetDropdown(): void {
+    if (!this.batchTargetSelect) return;
+    const popular = ['png', 'jpg', 'webp', 'mp3', 'wav', 'json', 'csv', 'yaml', 'pdf', 'zip'];
+    this.batchTargetSelect.innerHTML =
+      `<option value="">Set all compatible to...</option>` +
+      popular
+        .map((id) => {
+          const fmt = getFormatById(id);
+          return `<option value="${id}">${fmt ? fmt.label : id.toUpperCase()}</option>`;
+        })
+        .join('');
+  }
+
+  private renderFormatsExplorer(query = ''): void {
+    const listEl = this.formatsExplorerList;
+    if (!listEl) return;
+    const filtered = CLIENT_FORMATS.filter((f) => {
+      if (!query) return true;
+      return f.id.includes(query) || f.name.toLowerCase().includes(query) || f.category.includes(query);
+    });
+
+    listEl.innerHTML = filtered
+      .map((f) => {
+        let routeLabel = 'Local (On-device)';
+        let badgeClass = 'local';
+        if (!f.browserSupport.canEncodeNative && !f.browserSupport.canProcessPureJs) {
+          if (f.browserSupport.canProcessWasm) {
+            routeLabel = 'Local WASM Sandbox';
+            badgeClass = 'wasm';
+          } else {
+            routeLabel = 'Managed Server Fallback';
+            badgeClass = 'server';
+          }
+        }
+        return `
+          <div class="format-row-item">
+            <div>
+              <strong>${escapeHtml(f.label)}</strong> <span class="muted">(${escapeHtml(f.mimeType)})</span>
+              <div class="muted">${escapeHtml(f.name)} — ${escapeHtml(f.description)}</div>
+            </div>
+            <span class="route-pill ${badgeClass}">${escapeHtml(routeLabel)}</span>
+          </div>
+        `;
+      })
+      .join('');
   }
 
   private updateTopCounters(): void {
     const el = document.getElementById('stats-counter-text');
     if (el) {
-      el.textContent = `Local: ${this.localCompletedCount} · Server: ${this.serverCompletedCount} · ${formatBytes(this.bandwidthSavedBytes)} saved`;
+      el.textContent = `${this.localCompletedCount} local · ${this.serverCompletedCount} server · ${formatBytes(this.bandwidthSavedBytes)} saved`;
     }
   }
 
@@ -296,6 +465,11 @@ class OmniConvertApp {
       };
       const routing = this.evaluateRoute(file, headerBytes, sourceFormat, targetFormat, options);
 
+      let thumbnailUrl: string | undefined;
+      if (file.type.startsWith('image/')) {
+        thumbnailUrl = URL.createObjectURL(file);
+      }
+
       this.items.push({
         id: crypto.randomUUID(),
         file,
@@ -309,8 +483,10 @@ class OmniConvertApp {
         status: 'pending',
         progressPercent: 0,
         stageMessage: routing.isLocal
-          ? `Ready for zero-upload ${routing.selectedTier} conversion`
-          : `Ready for Server Fallback (lane: ${routing.serverLane})`,
+          ? `Ready (Local ${routing.selectedTier})`
+          : `Ready (Server ${routing.serverLane})`,
+        expandedSettings: false,
+        thumbnailUrl,
       });
     }
     this.renderQueue();
@@ -367,6 +543,8 @@ class OmniConvertApp {
     const hasItems = this.items.length > 0;
     this.batchToolbar.classList.toggle('hidden', !hasItems);
     this.tierOverview.classList.toggle('hidden', hasItems);
+    this.heroHeader.classList.toggle('compact', hasItems);
+    this.dropzone.classList.toggle('compact', hasItems);
 
     if (!hasItems) {
       this.queueList.innerHTML = '';
@@ -377,8 +555,8 @@ class OmniConvertApp {
     const serverCount = this.items.length - localCount;
     const completedCount = this.items.filter((i) => i.status === 'completed' && i.output).length;
 
-    this.queueCountLabel.textContent = `${this.items.length} file${this.items.length === 1 ? '' : 's'} in batch`;
-    this.queueRouteBreakdown.textContent = `${localCount} Local (0 KB upload) · ${serverCount} Server Fallback`;
+    this.queueCountLabel.textContent = `${this.items.length} file${this.items.length === 1 ? '' : 's'}`;
+    this.queueRouteBreakdown.textContent = `${localCount} on-device · ${serverCount} cloud fallback`;
     this.downloadZipBtn.classList.toggle('hidden', completedCount < 2);
 
     this.queueList.innerHTML = this.items.map((item) => this.renderJobCard(item)).join('');
@@ -532,121 +710,128 @@ class OmniConvertApp {
     let deltaBadge = '';
     if (item.status === 'completed' && item.output) {
       const pct = ((item.output.bytes.length - item.file.size) / Math.max(1, item.file.size)) * 100;
-      const pctStr = pct <= 0 ? `${Math.round(pct)}% smaller` : `+${Math.round(pct)}%`;
+      const pctStr = pct <= 0 ? `${Math.round(pct)}%` : `+${Math.round(pct)}%`;
       const timing = item.durationMs !== undefined ? ` · ${item.durationMs}ms` : '';
-      deltaBadge = `<span class="delta-badge ${pct > 0 ? 'larger' : ''}">${formatBytes(item.output.bytes.length)} (${pctStr}${timing})</span>`;
+      deltaBadge = `<span class="delta-text ${pct > 0 ? 'larger' : ''}">${formatBytes(item.output.bytes.length)} (${pctStr}${timing})</span>`;
     }
 
-    const magicLabel = item.magic.isSpoofedOrMismatched
-      ? `⚠ Spoofed: real ${item.sourceFormat.toUpperCase()}`
-      : item.magic.confidence === 'high'
-        ? `✓ Magic: ${item.sourceFormat.toUpperCase()}`
-        : `Ext: ${item.sourceFormat.toUpperCase()}`;
+    const fileIconSvg = item.thumbnailUrl
+      ? `<img src="${item.thumbnailUrl}" alt="" />`
+      : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>`;
 
     return `
       <article class="job-card status-${item.status}" data-job-id="${item.id}">
-        <div class="job-top-row">
-          <div class="file-identity">
-            <div class="file-title-line">
-              <span class="file-name">${escapeHtml(item.file.name)}</span>
-              <span class="file-size">${formatBytes(item.file.size)}</span>
-              <span class="magic-badge ${item.magic.isSpoofedOrMismatched ? 'spoof' : ''}" title="${escapeHtml(item.magic.warningMessage || 'Verified by binary magic-byte inspection')}">
-                ${escapeHtml(magicLabel)}
-              </span>
+        <!-- Hairline Progress Line -->
+        <div class="progress-line-track">
+          <div class="progress-line-fill ${item.routing.isLocal ? '' : 'server'}" style="width: ${item.progressPercent}%"></div>
+        </div>
+
+        <!-- Main Clean Single Row -->
+        <div class="job-main-row">
+          <div class="job-file-col">
+            <div class="file-thumb" aria-hidden="true">${fileIconSvg}</div>
+            <div class="file-meta-col">
+              <span class="file-name" title="${escapeHtml(item.file.name)}">${escapeHtml(item.file.name)}</span>
+              <div class="file-subline">
+                <span>${formatBytes(item.file.size)}</span>
+                <span class="fmt-pill ${item.magic.isSpoofedOrMismatched ? 'spoof' : ''}">${escapeHtml(item.sourceFormat)}</span>
+              </div>
             </div>
           </div>
 
-          <div class="route-badge route-${item.routing.selectedTier}" title="${escapeHtml(item.routing.reason)}">
-            <span>${badge.icon}</span>
-            <span>${escapeHtml(badge.label)}</span>
-          </div>
-        </div>
-
-        <div class="job-controls-row">
-          <div class="control-group">
-            <span class="control-label">Convert to</span>
-            <select data-action="target" data-id="${item.id}" ${isBusy ? 'disabled' : ''}>
+          <div class="job-convert-col">
+            <span class="arrow-muted" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
+            <select class="target-select" data-action="target" data-id="${item.id}" ${isBusy ? 'disabled' : ''}>
               ${this.renderTargetSelectOptions(item.sourceFormat, item.targetFormat)}
             </select>
+            ${
+              presets.length > 0
+                ? `
+              <select class="preset-select" data-action="preset" data-id="${item.id}" ${isBusy ? 'disabled' : ''}>
+                <option value="">Preset...</option>
+                ${presets.map((p) => `<option value="${escapeHtml(p.id)}" ${item.presetId === p.id ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join('')}
+              </select>`
+                : ''
+            }
+            <button type="button" class="settings-toggle-btn ${item.expandedSettings ? 'active' : ''}" data-action="toggle-settings" data-id="${item.id}" title="Toggle format options & route details">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
           </div>
 
-          ${
-            presets.length > 0
-              ? `
-            <div class="control-group">
-              <span class="control-label">Preset</span>
-              <select data-action="preset" data-id="${item.id}" ${isBusy ? 'disabled' : ''}>
-                <option value="">Custom</option>
-                ${presets
-                  .map(
-                    (p) =>
-                      `<option value="${escapeHtml(p.id)}" ${item.presetId === p.id ? 'selected' : ''}>${escapeHtml(p.name)}</option>`,
-                  )
-                  .join('')}
-              </select>
-            </div>`
-              : ''
-          }
+          <div class="job-actions-col">
+            <span class="route-pill ${badge.tierClass}" title="${escapeHtml(item.routing.reason)}">
+              <span>${badge.icon}</span> ${escapeHtml(badge.label)}
+            </span>
 
-          <div class="control-group">
-            <span class="control-label">Route</span>
-            <div class="mode-toggle">
-              <button type="button" class="${mode === 'AUTO' ? 'active' : ''}" data-action="mode" data-mode="AUTO" data-id="${item.id}" ${isBusy ? 'disabled' : ''}>Auto Hybrid</button>
-              <button type="button" class="${mode === 'LOCAL_ONLY' ? 'active' : ''}" data-action="mode" data-mode="LOCAL_ONLY" data-id="${item.id}" ${isBusy ? 'disabled' : ''}>Force Local</button>
-              <button type="button" class="${mode === 'SERVER_ONLY' ? 'active' : ''}" data-action="mode" data-mode="SERVER_ONLY" data-id="${item.id}" ${isBusy ? 'disabled' : ''}>Force Server</button>
-            </div>
+            ${deltaBadge}
+
+            ${
+              isBusy
+                ? `<button type="button" class="btn btn-xs btn-danger" data-action="cancel" data-id="${item.id}">Cancel</button>`
+                : item.status === 'completed' && item.output
+                  ? `
+                    <button type="button" class="btn btn-xs btn-ghost" data-action="preview" data-id="${item.id}">Preview</button>
+                    <a class="btn btn-xs btn-success" href="${item.output.objectUrl}" download="${escapeHtml(item.output.filename)}">Download</a>
+                  `
+                  : `<button type="button" class="btn btn-xs btn-primary" data-action="convert" data-id="${item.id}">Convert</button>`
+            }
+            <button type="button" class="icon-btn" data-action="remove" data-id="${item.id}" title="Remove file" style="width:28px;height:28px">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
           </div>
         </div>
 
-        <div class="route-reason-banner ${item.routing.isLocal ? '' : 'server'}">
-          <strong>Engine:</strong> <code>${escapeHtml(item.routing.selectedEngine)}</code> ·
-          <strong>Est. RAM:</strong> ~${item.routing.estimatedPeakMemoryMB.toFixed(1)} MB ·
-          ${escapeHtml(item.routing.reason)}
-        </div>
-
+        <!-- Collapsible Drawer -->
         ${
-          item.routing.warnings.length > 0
-            ? `<div class="warning-banner">${item.routing.warnings.map(escapeHtml).join('<br/>')}</div>`
+          item.expandedSettings
+            ? `
+          <div class="job-settings-drawer">
+            <div class="engine-meta-line">
+              <span>Engine: <code>${escapeHtml(item.routing.selectedEngine)}</code></span>
+              <span>Memory Est: <code>~${item.routing.estimatedPeakMemoryMB.toFixed(1)} MB</code></span>
+              <span>${escapeHtml(item.routing.reason)}</span>
+            </div>
+
+            <div class="settings-row">
+              <div class="mode-segmented">
+                <button type="button" class="${mode === 'AUTO' ? 'active' : ''}" data-action="mode" data-mode="AUTO" data-id="${item.id}">Auto Hybrid</button>
+                <button type="button" class="${mode === 'LOCAL_ONLY' ? 'active' : ''}" data-action="mode" data-mode="LOCAL_ONLY" data-id="${item.id}">Force Local</button>
+                <button type="button" class="${mode === 'SERVER_ONLY' ? 'active' : ''}" data-action="mode" data-mode="SERVER_ONLY" data-id="${item.id}">Force Server</button>
+              </div>
+
+              ${this.renderContextualOptions(item)}
+            </div>
+          </div>`
             : ''
         }
 
-        ${item.errorMessage ? `<div class="error-banner">${escapeHtml(item.errorMessage)}</div>` : ''}
+        ${
+          item.routing.warnings.length > 0
+            ? `<div class="inline-alert warn">${item.routing.warnings.map(escapeHtml).join('<br/>')}</div>`
+            : ''
+        }
+        ${item.errorMessage ? `<div class="inline-alert error">${escapeHtml(item.errorMessage)}</div>` : ''}
 
-        ${this.renderContextualOptions(item)}
-
-        <div class="job-footer">
-          <div class="progress-wrap">
-            <div class="progress-track">
-              <div class="progress-fill ${item.routing.isLocal ? '' : 'server'}" style="width: ${item.progressPercent}%"></div>
-            </div>
-            <div class="progress-meta">
-              <span>${escapeHtml(item.stageMessage)}</span>
-              <span>${Math.round(item.progressPercent)}%</span>
-            </div>
-          </div>
-
-          ${deltaBadge}
-
-          <div class="job-actions">
-            ${
-              isBusy
-                ? `<button type="button" class="btn btn-sm btn-danger" data-action="cancel" data-id="${item.id}">Cancel</button>`
-                : item.status === 'completed' && item.output
-                  ? `
-                    <button type="button" class="btn btn-sm btn-secondary" data-action="preview" data-id="${item.id}">👁 Preview</button>
-                    <a class="btn btn-sm btn-emerald" href="${item.output.objectUrl}" download="${escapeHtml(item.output.filename)}">⬇ Download</a>
-                    <button type="button" class="btn btn-sm btn-ghost" data-action="convert" data-id="${item.id}">↻ Re-run</button>
-                  `
-                  : `<button type="button" class="btn btn-sm btn-primary" data-action="convert" data-id="${item.id}">Convert</button>`
-            }
-            <button type="button" class="btn btn-sm btn-ghost" data-action="remove" data-id="${item.id}" title="Remove from batch">✕</button>
-          </div>
+        <div class="job-progress-bar">
+          <span>${escapeHtml(item.stageMessage)}</span>
+          <span>${Math.round(item.progressPercent)}%</span>
         </div>
       </article>
     `;
   }
 
   private attachCardListeners(): void {
+    this.queueList.querySelectorAll<HTMLButtonElement>('button[data-action="toggle-settings"]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const item = this.items.find((i) => i.id === btn.dataset.id);
+        if (!item) return;
+        item.expandedSettings = !item.expandedSettings;
+        this.renderQueue();
+      });
+    });
+
     this.queueList.querySelectorAll<HTMLSelectElement>('select[data-action="target"]').forEach((el) => {
       el.addEventListener('change', () => {
         const item = this.items.find((i) => i.id === el.dataset.id);
@@ -890,11 +1075,11 @@ class OmniConvertApp {
   private updateCardProgressOnly(item: BatchQueueItem): void {
     const card = this.queueList.querySelector<HTMLElement>(`[data-job-id="${item.id}"]`);
     if (!card) return;
-    const fill = card.querySelector<HTMLElement>('.progress-fill');
-    const metaSpans = card.querySelectorAll<HTMLElement>('.progress-meta span');
+    const fill = card.querySelector<HTMLElement>('.progress-line-fill');
+    const barSpans = card.querySelectorAll<HTMLElement>('.job-progress-bar span');
     if (fill) fill.style.width = `${item.progressPercent}%`;
-    if (metaSpans[0]) metaSpans[0].textContent = item.stageMessage;
-    if (metaSpans[1]) metaSpans[1].textContent = `${Math.round(item.progressPercent)}%`;
+    if (barSpans[0]) barSpans[0].textContent = item.stageMessage;
+    if (barSpans[1]) barSpans[1].textContent = `${Math.round(item.progressPercent)}%`;
   }
 
   private async downloadAllAsZip(): Promise<void> {
@@ -951,14 +1136,14 @@ class OmniConvertApp {
     const text = document.getElementById('server-health-text')!;
 
     if (!health) {
-      dot.className = 'dot dot-rose';
-      text.textContent = 'Server: Offline (Local 100% Ready)';
+      dot.className = 'status-indicator dot-rose';
+      text.textContent = 'Offline';
     } else if (health.status === 'ok') {
-      dot.className = 'dot dot-emerald';
-      text.textContent = `Server: Online (${health.storage.activeJobDirs} active)`;
+      dot.className = 'status-indicator dot-emerald';
+      text.textContent = 'Engine';
     } else {
-      dot.className = 'dot dot-amber';
-      text.textContent = `Server: ${health.status}`;
+      dot.className = 'status-indicator dot-amber';
+      text.textContent = health.status;
     }
 
     this.renderServerTelemetry();
@@ -970,21 +1155,17 @@ class OmniConvertApp {
     if (!metricsEl || !slotsEl) return;
 
     metricsEl.innerHTML = `
-      <div class="mini-stat">
-        <div class="mini-stat-label">Active / Max Pool</div>
-        <div class="mini-stat-value">${stats.activeCount} / ${stats.maxWorkers}</div>
+      <div class="kv-item">
+        <span class="kv-label">Active / Pool</span>
+        <strong class="kv-val">${stats.activeCount} / ${stats.maxWorkers}</strong>
       </div>
-      <div class="mini-stat">
-        <div class="mini-stat-label">Queued Tasks</div>
-        <div class="mini-stat-value">${stats.queuedCount}</div>
+      <div class="kv-item">
+        <span class="kv-label">Queued</span>
+        <strong class="kv-val">${stats.queuedCount}</strong>
       </div>
-      <div class="mini-stat">
-        <div class="mini-stat-label">Processed</div>
-        <div class="mini-stat-value">${stats.totalJobsProcessed} (${formatBytes(stats.totalBytesProcessed)})</div>
-      </div>
-      <div class="mini-stat">
-        <div class="mini-stat-label">WASM Recycles</div>
-        <div class="mini-stat-value">${stats.recycledWorkersCount}</div>
+      <div class="kv-item">
+        <span class="kv-label">Processed</span>
+        <strong class="kv-val">${stats.totalJobsProcessed}</strong>
       </div>
     `;
 
@@ -993,7 +1174,7 @@ class OmniConvertApp {
         (s) => `
       <div class="slot-row">
         <span>Worker #${s.slotId} (${s.busy ? 'BUSY' : 'IDLE'})</span>
-        <span>${s.jobsRun} jobs · ${formatBytes(s.cumulativeBytes)} / ${formatBytes(stats.highWaterMarkBytes)}</span>
+        <span>${s.jobsRun} jobs · ${formatBytes(s.cumulativeBytes)}</span>
       </div>`,
       )
       .join('');
@@ -1028,10 +1209,9 @@ class OmniConvertApp {
     lanesEl.innerHTML = lanes
       .map(
         (lane) => `
-      <div class="mini-stat">
-        <div class="mini-stat-label">lane:${lane}</div>
-        <div class="mini-stat-value">${h.activeJobsByLane[lane] ?? 0} / ${h.laneConcurrencyLimits[lane] ?? '-'} active</div>
-        <div class="muted">${h.queuedJobsByLane[lane] ?? 0} queued</div>
+      <div class="kv-item">
+        <span class="kv-label">lane:${lane}</span>
+        <strong class="kv-val">${h.activeJobsByLane[lane] ?? 0} / ${h.laneConcurrencyLimits[lane] ?? '-'}</strong>
       </div>`,
       )
       .join('');
@@ -1039,15 +1219,15 @@ class OmniConvertApp {
     const st = h.storage;
     const pct = Math.min(100, Math.max(0, st.usagePercent));
     storageEl.innerHTML = `
-      <div class="progress-track">
-        <div class="progress-fill server" style="width:${pct}%"></div>
+      <div class="progress-line-track">
+        <div class="progress-line-fill server" style="width:${pct}%"></div>
       </div>
-      <div style="display:flex;justify-content:space-between">
+      <div style="display:flex;justify-content:space-between;margin-top:6px">
         <span>Used: <strong>${formatBytes(st.usedBytes)}</strong> / ${formatBytes(st.maxQuotaBytes)} (${pct.toFixed(1)}%)</span>
         <span>TTL: <strong>${st.ttlMinutes} min</strong></span>
       </div>
       <div class="muted">
-        Active job sandboxes: ${st.activeJobDirs} · Total purged dirs: ${st.totalPurgedDirs} · Completed: ${h.totalCompletedJobs}
+        Active sandboxes: ${st.activeJobDirs} · Purged: ${st.totalPurgedDirs} · Completed: ${h.totalCompletedJobs}
       </div>
     `;
 
