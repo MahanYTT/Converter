@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="6" fill="#141413" />
+  <!-- Geometric corner-frame -->
+  <path d="M10 9h10v2.5h-7.5V19H10V9z" fill="#FFFFFF" />
+  <!-- Vermilion diagonal precision notch -->
+  <path d="M12 23l9-9h4L16 23h-4z" fill="#E04428" />
+  <!-- Crisp circular target core -->
+  <circle cx="23" cy="21" r="3.5" fill="#FFFFFF" />
+</svg>
