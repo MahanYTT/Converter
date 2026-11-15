@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OmniConvert — Private Browser &amp; Cloud File Converter</title>
+  <title>OmniConvert ÔÇö Universal File Converter</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -23,19 +23,14 @@
             </svg>
           </span>
           <span class="brand-name">OmniConvert</span>
-          <span class="privacy-tag" title="Local conversions never leave your device">
+          <span class="privacy-tag" title="Private and fast on-device conversions">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
-            On-device ready
+            Private &amp; Instant
           </span>
         </a>
-
         <nav class="nav-actions" aria-label="Primary controls">
-          <div class="session-metric" id="stats-counter-pill" title="Session conversion statistics">
-            <span id="stats-counter-text">0 local · 0 server</span>
-          </div>
-
           <button type="button" class="nav-btn" id="open-formats-btn">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <rect x="3" y="3" width="7" height="7" rx="1"/>
@@ -43,14 +38,11 @@
               <rect x="14" y="14" width="7" height="7" rx="1"/>
               <rect x="3" y="14" width="7" height="7" rx="1"/>
             </svg>
-            Formats
+            Supported Formats
           </button>
-
-          <button type="button" class="nav-btn" id="open-ops-drawer-btn" title="System engine, worker pool &amp; server telemetry">
-            <span class="status-indicator dot-amber" id="server-health-dot"></span>
-            <span id="server-health-text">Engine</span>
+          <button type="button" class="nav-btn" id="paste-text-btn">
+            Paste Text / Code
           </button>
-
           <button type="button" class="icon-btn" id="theme-toggle-btn" aria-label="Toggle color theme" title="Toggle light/dark mode">
             <svg id="theme-icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
@@ -70,18 +62,15 @@
         </nav>
       </div>
     </header>
-
     <!-- Main Focused Workspace -->
     <main class="main-container">
       <!-- Hero Title -->
       <section class="hero-header" id="hero-header">
-        <h1>Convert files privately, right in your browser.</h1>
+        <h1>Convert any file in seconds.</h1>
         <p>
-          Images, audio, structured data, ZIPs, and PDFs convert locally on your device with zero uploads.
-          Heavy office or media formats hand off seamlessly to our ephemeral server.
+          85+ formats across images, audio, documents, data, and archives. Processed privately on your device.
         </p>
       </section>
-
       <!-- Clean Dropzone -->
       <section class="dropzone" id="dropzone" tabindex="0" role="region" aria-label="File upload area">
         <input type="file" id="file-input" multiple hidden />
@@ -95,27 +84,33 @@
           </div>
           <div class="dropzone-copy">
             <strong>Drop files here to convert</strong>
-            <span>or browse from your computer — batch uploads supported</span>
+            <span>or browse from your computer ÔÇö batch uploads supported</span>
           </div>
           <div class="dropzone-buttons">
             <button type="button" class="btn btn-primary" id="browse-files-btn">
-              Select files
+              Choose Files
             </button>
-            <button type="button" class="btn btn-secondary" id="paste-text-btn">
-              Paste text / code
+            <button type="button" class="btn btn-secondary" id="paste-text-btn-hero">
+              Paste Code / Data
             </button>
             <button type="button" class="btn btn-ghost" id="load-demo-btn">
-              Try sample batch
+              Load Sample Files
             </button>
+          </div>
+          <div class="dropzone-format-pills" style="margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <span class="pill">PNG ÔåÆ WEBP</span>
+            <span class="pill">WAV ÔåÆ MP3</span>
+            <span class="pill">CSV ÔåÆ JSON</span>
+            <span class="pill">MD ÔåÆ PDF</span>
+            <span class="pill">DOCX ÔåÆ PDF</span>
           </div>
         </div>
       </section>
-
       <!-- Active Batch Toolbar -->
       <section class="batch-bar hidden" id="batch-toolbar">
         <div class="batch-bar-left">
           <strong id="queue-count-label">0 files</strong>
-          <span class="sep" aria-hidden="true">·</span>
+          <span class="sep" aria-hidden="true">ÔÇó</span>
           <span class="batch-breakdown" id="queue-route-breakdown"></span>
         </div>
         <div class="batch-bar-right">
@@ -125,7 +120,7 @@
             </select>
           </div>
           <button type="button" class="btn btn-ghost btn-sm" id="clear-completed-btn">
-            Clear done
+            Clear Completed
           </button>
           <button type="button" class="btn btn-secondary btn-sm hidden" id="download-zip-btn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -133,24 +128,22 @@
               <polyline points="7 10 12 15 17 10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            Download ZIP
+            Download All (.ZIP)
           </button>
           <button type="button" class="btn btn-primary btn-sm" id="convert-all-btn">
-            Convert all
+            Convert All
           </button>
         </div>
       </section>
-
       <!-- File Queue List -->
       <section class="queue-list" id="queue-list" aria-live="polite"></section>
-
       <!-- Empty-State Information & Format Explorer -->
       <section class="landing-details" id="tier-overview">
         <div class="surface-card format-strip-card">
           <div class="format-strip-head">
             <div>
-              <h2>Supported formats at a glance</h2>
-              <p>Inspect what converts locally in your browser versus on our managed fallback server.</p>
+              <h2>Supported formats directory</h2>
+              <p>Explore our extensive, high-speed conversion capabilities.</p>
             </div>
             <div class="category-tabs" id="landing-category-tabs" role="tablist">
               <button type="button" class="tab-btn active" data-cat="image">Images</button>
@@ -162,14 +155,18 @@
             </div>
           </div>
           <div class="format-chips-grid" id="landing-format-chips"></div>
-          <div class="format-legend">
-            <span><i class="legend-dot local"></i> Runs 100% locally in browser</span>
-            <span><i class="legend-dot wasm"></i> Lazy WebAssembly sandbox</span>
-            <span><i class="legend-dot server"></i> Isolated server fallback</span>
-          </div>
         </div>
-
         <div class="pillars-grid">
+          <div class="pillar-card">
+            <div class="pillar-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <h3>Zero-Wait Speed</h3>
+            <p>Our intelligent engine processes your files instantly. No queues, no delays, just your converted files ready immediately.</p>
+          </div>
           <div class="pillar-card">
             <div class="pillar-icon">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -177,8 +174,8 @@
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
               </svg>
             </div>
-            <h3>Zero-upload privacy</h3>
-            <p>Canvas imaging, WebAudio PCM decoding, JSON/CSV/YAML transforms, ZIP packaging, and PDF generation stay strictly on your machine.</p>
+            <h3>Privacy by Default</h3>
+            <p>Files never leave your device unless strictly necessary for heavy processing, ensuring maximum security and confidentiality.</p>
           </div>
           <div class="pillar-card">
             <div class="pillar-icon">
@@ -190,43 +187,26 @@
                 <line x1="4" y1="4" x2="9" y2="9"/>
               </svg>
             </div>
-            <h3>Automatic smart routing</h3>
-            <p>Files are inspected via binary magic bytes and profiled against your device's available RAM before deciding between local workers or server lanes.</p>
-          </div>
-          <div class="pillar-card">
-            <div class="pillar-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12 6 12 12 16 14"/>
-              </svg>
-            </div>
-            <h3>Ephemeral server cleanup</h3>
-            <p>When server fallback is needed (e.g., DOCX or 7z), jobs run in quarantined directories and auto-purge on download or after 15 minutes.</p>
+            <h3>Studio-Grade Quality</h3>
+            <p>Experience precise, uncompromised fidelity. Every format is seamlessly converted maintaining original structures and fidelity.</p>
           </div>
         </div>
       </section>
     </main>
-
     <!-- Clean Footer -->
     <footer class="site-footer">
-      <div class="footer-inner">
-        <span>OmniConvert Hybrid Engine · Local-first browser processing</span>
-        <div class="footer-links">
-          <a href="/architecture" target="_blank" rel="noopener">Architecture Blueprint</a>
-          <span aria-hidden="true">·</span>
-          <span id="footer-device-summary">Detecting hardware...</span>
-        </div>
+      <div class="footer-inner" style="justify-content: center; text-align: center;">
+        <span>OmniConvert ÔÇö Fast, Private, and Universal</span>
       </div>
     </footer>
   </div>
-
   <!-- Paste Text / Code Modal -->
   <div class="modal-backdrop hidden" id="paste-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="paste-modal-title">
     <div class="modal-dialog">
       <div class="modal-header">
         <div>
           <h2 id="paste-modal-title">Paste text, data, or markup</h2>
-          <p>Convert JSON, CSV, YAML, XML, TOML, Markdown, HTML, or SQL directly in-browser.</p>
+          <p>Instantly convert JSON, CSV, YAML, XML, TOML, Markdown, HTML, or SQL.</p>
         </div>
         <button type="button" class="icon-btn" id="close-paste-modal-btn" aria-label="Close">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -255,7 +235,7 @@
             <input type="text" id="paste-filename" value="snippet.json" />
           </label>
         </div>
-        <textarea id="paste-textarea" rows="10" placeholder='{"name": "OmniConvert", "local": true, "formats": 85}'></textarea>
+        <textarea id="paste-textarea" rows="10" placeholder='{"name": "OmniConvert", "formats": 85}'></textarea>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-ghost btn-sm" id="cancel-paste-btn">Cancel</button>
@@ -263,14 +243,13 @@
       </div>
     </div>
   </div>
-
   <!-- Supported Formats Explorer Modal -->
   <div class="modal-backdrop hidden" id="formats-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="formats-modal-title">
     <div class="modal-dialog modal-lg">
       <div class="modal-header">
         <div>
-          <h2 id="formats-modal-title">Supported Formats &amp; Routing Matrix</h2>
-          <p>Search 60+ supported formats and inspect local browser vs. server fallback capabilities.</p>
+          <h2 id="formats-modal-title">Formats Directory</h2>
+          <p>Search over 85 supported formats across multiple categories.</p>
         </div>
         <button type="button" class="icon-btn" id="close-formats-modal-btn" aria-label="Close">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -280,95 +259,18 @@
       </div>
       <div class="modal-body">
         <div class="formats-search-bar">
-          <input type="search" id="formats-search-input" placeholder="Search format (e.g. webp, wav, parquet, docx, yaml)..." />
+          <input type="search" id="formats-search-input" placeholder="Search formats (e.g., png, csv, docx)..." />
         </div>
         <div class="formats-table-wrap" id="formats-explorer-list"></div>
       </div>
     </div>
   </div>
-
-  <!-- Engine & Server Management Slide-Over Drawer -->
-  <aside class="drawer-backdrop hidden" id="ops-drawer-backdrop" role="dialog" aria-modal="true" aria-labelledby="ops-drawer-title">
-    <div class="drawer-panel">
-      <div class="modal-header">
-        <div>
-          <h2 id="ops-drawer-title">Engine &amp; Server Telemetry</h2>
-          <p>Device hardware limits, browser worker pool, and server fallback lanes</p>
-        </div>
-        <button type="button" class="icon-btn" id="close-ops-drawer-btn" aria-label="Close console">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
-      </div>
-
-      <div class="drawer-body">
-        <div class="ops-block">
-          <div class="ops-block-head">
-            <h3>Device Capability Profile</h3>
-          </div>
-          <div class="kv-grid">
-            <div class="kv-item">
-              <span class="kv-label">Logical CPU</span>
-              <strong class="kv-val" id="device-cores-text">--</strong>
-            </div>
-            <div class="kv-item">
-              <span class="kv-label">Safe RAM Cap</span>
-              <strong class="kv-val" id="device-ram-text">--</strong>
-            </div>
-            <div class="kv-item">
-              <span class="kv-label">SharedArrayBuffer</span>
-              <strong class="kv-val" id="device-coi-text">--</strong>
-            </div>
-          </div>
-          <div class="cap-list" id="capability-pills"></div>
-        </div>
-
-        <div class="ops-block">
-          <div class="ops-block-head">
-            <h3>Browser Worker Pool</h3>
-            <button type="button" class="btn btn-ghost btn-xs" id="recycle-workers-btn">Recycle idle</button>
-          </div>
-          <div class="kv-grid" id="client-worker-metrics"></div>
-          <div class="slot-list" id="worker-slots-list"></div>
-        </div>
-
-        <div class="ops-block">
-          <div class="ops-block-head">
-            <h3>Server Concurrency Lanes</h3>
-            <button type="button" class="btn btn-ghost btn-xs" id="refresh-health-btn">Refresh</button>
-          </div>
-          <div class="kv-grid" id="server-lanes-grid">
-            <div class="muted">Loading server telemetry...</div>
-          </div>
-        </div>
-
-        <div class="ops-block">
-          <div class="ops-block-head">
-            <h3>Ephemeral Scratch Storage</h3>
-            <button type="button" class="btn btn-secondary btn-xs" id="trigger-sweep-btn">Run TTL sweep</button>
-          </div>
-          <div id="server-storage-panel" class="storage-box">
-            <div class="muted">Connecting to /api/v1/health...</div>
-          </div>
-        </div>
-
-        <div class="ops-block">
-          <div class="ops-block-head">
-            <h3>Server Toolchain Probe</h3>
-          </div>
-          <div class="binaries-grid" id="server-binaries-grid"></div>
-        </div>
-      </div>
-    </div>
-  </aside>
-
   <!-- Output Preview Modal -->
   <div class="modal-backdrop hidden" id="preview-backdrop" role="dialog" aria-modal="true" aria-labelledby="preview-title">
     <div class="modal-dialog modal-lg">
       <div class="modal-header">
         <div>
-          <h2 id="preview-title">Output Preview</h2>
+          <h2 id="preview-title">Studio Output Inspector</h2>
         </div>
         <button type="button" class="icon-btn" id="close-preview-btn" aria-label="Close preview">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -379,7 +281,6 @@
       <div class="preview-body" id="preview-body"></div>
     </div>
   </div>
-
   <script type="module" src="/src/client/bundle.js"></script>
 </body>
 </html>
