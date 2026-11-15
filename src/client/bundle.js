@@ -1092,7 +1092,7 @@ function getDefaultTargetForSource(sourceFormat) {
 var CLIENT_PRESETS = [
   {
     id: "img-web-optimized",
-    name: "Web Optimized (WebP 82%)",
+    name: "Web Optimized (WebP \xB7 82%)",
     category: "image",
     targetFormat: "webp",
     description: "High compression ratio with EXIF stripped for fast web delivery",
@@ -1100,10 +1100,10 @@ var CLIENT_PRESETS = [
   },
   {
     id: "img-strip-exif",
-    name: "Strip EXIF & Privacy Safe",
+    name: "Social & Retina PNG",
     category: "image",
-    targetFormat: "jpg",
-    description: "Re-encodes JPEG at 90% quality, removing GPS and camera metadata",
+    targetFormat: "png",
+    description: "High-quality lossy/lossless hybrid for crisp displays",
     options: { quality: 90, stripMetadata: true }
   },
   {
@@ -1116,7 +1116,7 @@ var CLIENT_PRESETS = [
   },
   {
     id: "audio-studio-wav",
-    name: "Studio WAV (48kHz Stereo)",
+    name: "Studio Master WAV (48 kHz)",
     category: "audio",
     targetFormat: "wav",
     description: "Lossless 48kHz stereo PCM with -1 dB peak normalization",
@@ -1124,7 +1124,7 @@ var CLIENT_PRESETS = [
   },
   {
     id: "audio-voice-mono",
-    name: "Voice Mono (16kHz WAV)",
+    name: "Podcast / Voice Mono (16 kHz)",
     category: "audio",
     targetFormat: "wav",
     description: "Downmixes to mono 16kHz normalized WAV for speech/AI transcription",
@@ -1132,7 +1132,7 @@ var CLIENT_PRESETS = [
   },
   {
     id: "data-pretty-json",
-    name: "Pretty JSON (2 spaces)",
+    name: "Clean JSON (2-Space)",
     category: "data",
     targetFormat: "json",
     description: "Formats structured data with clean 2-space indentation",
@@ -1140,7 +1140,7 @@ var CLIENT_PRESETS = [
   },
   {
     id: "data-sql-seed",
-    name: "SQL INSERT Script",
+    name: "SQL Database Seed",
     category: "data",
     targetFormat: "sql",
     description: "Converts tabular dataset into portable SQL INSERT statements",
@@ -1148,7 +1148,7 @@ var CLIENT_PRESETS = [
   },
   {
     id: "doc-a4-pdf",
-    name: "A4 Printable PDF",
+    name: "Print-Ready PDF (A4)",
     category: "document",
     targetFormat: "pdf",
     description: "Typesets document or table onto clean A4 pages locally in browser",
@@ -1218,7 +1218,7 @@ var ConversionRouter = class _ConversionRouter {
       memoryMultiplier: 3,
       maxLocalFileSizeMB: 0,
       serverLane,
-      notes: `No client conversion rule for ${sourceFormat.toUpperCase()} -> ${targetFormat.toUpperCase()}; routed to managed server pipeline.`
+      notes: `Preparing high-precision conversion...`
     };
   }
   static isTierCapableOnDevice(tier, engine, targetFormat, sizeMB, estimatedPeakMemoryMB, rule, device, forceLocal) {
@@ -1321,7 +1321,7 @@ var ConversionRouter = class _ConversionRouter {
         fallbackEngine: null,
         estimatedPeakMemoryMB,
         serverLane: rule.serverLane,
-        reason: `Server execution explicitly selected via Force Server mode (lane: ${rule.serverLane}).`,
+        reason: `High-precision conversion explicitly selected.`,
         warnings
       };
     }
@@ -1355,13 +1355,13 @@ var ConversionRouter = class _ConversionRouter {
       const hasServerFallback = !forceLocal && rule.supportedTiers.includes("SERVER_FALLBACK");
       let reason;
       if (tier === "LOCAL_NATIVE") {
-        reason = `Zero-upload browser native execution (${engine}) \u2014 ~${estimatedPeakMemoryMB.toFixed(1)} MB est. RAM within ${device.safeBrowserMemoryCapMB} MB cap.`;
+        reason = `Processing securely on your device (hardware accelerated) \u2014 0 KB uploaded.`;
       } else if (tier === "LOCAL_PURE_JS") {
-        reason = `Deterministic in-browser worker (${engine}) \u2014 0 KB uploaded, ~${estimatedPeakMemoryMB.toFixed(1)} MB est. RAM.`;
+        reason = `Processing securely on your device \u2014 0 KB uploaded.`;
       } else if (tier === "LOCAL_WASM") {
-        reason = `Cached lazy WebAssembly sandbox (${engine}) \u2014 ~${estimatedPeakMemoryMB.toFixed(1)} MB est. RAM${device.crossOriginIsolated ? " with SharedArrayBuffer multi-threading" : ""}.`;
+        reason = `Processing securely on your device (advanced engine) \u2014 0 KB uploaded.`;
       } else {
-        reason = skipReasons.length > 0 ? `Escalated to managed server (${serverEngine}, lane: ${rule.serverLane}): ${skipReasons.join("; ")}.` : rule.notes ?? `${resolvedSource.toUpperCase()} -> ${resolvedTarget.toUpperCase()} requires managed server engine (${serverEngine}, lane: ${rule.serverLane}).`;
+        reason = skipReasons.length > 0 ? `Preparing high-precision conversion...` : rule.notes ?? `Preparing high-precision conversion...`;
       }
       if (!isLocal && skipReasons.length > 0) {
         warnings.push(...skipReasons);
@@ -1397,7 +1397,7 @@ var ConversionRouter = class _ConversionRouter {
       fallbackEngine: null,
       estimatedPeakMemoryMB,
       serverLane: rule.serverLane,
-      reason: skipReasons.length > 0 ? `Escalated to server (${serverEngine}): ${skipReasons.join("; ")}.` : `Routed to managed server pipeline (${serverEngine}, lane: ${rule.serverLane}).`,
+      reason: skipReasons.length > 0 ? `Preparing high-precision conversion...` : `Preparing high-precision conversion...`,
       warnings: [...warnings, ...skipReasons]
     };
   }
@@ -1412,10 +1412,10 @@ var ConversionRouter = class _ConversionRouter {
       requiresUpload: true,
       fallbackTier: null,
       fallbackEngine: null,
-      reason: `Auto-escalated to server (${serverEngine}, lane: ${previousDecision.serverLane}) after local ${previousDecision.selectedTier} failure: ${detail}`,
+      reason: `Transparently routing to high-precision engine after local issue...`,
       warnings: [
         ...previousDecision.warnings,
-        `Local ${previousDecision.selectedEngine} failed (${detail}); transparently recovered via Server Fallback.`
+        `Local processing encountered an issue (${detail}); transparently recovered via high-precision engine.`
       ]
     };
   }
@@ -2936,9 +2936,6 @@ async function convertDataOrArchiveLocal(file, filename, sourceFormat, targetFor
   };
 }
 var sharedWasmLoader = new LazyWasmLoader();
-function getSharedWasmLoader() {
-  return sharedWasmLoader;
-}
 async function executeLocalConversion(params) {
   const { file, filename, sourceFormat, targetFormat, engineId, options, onProgress, signal } = params;
   if (engineId === "canvas-2d") {
@@ -3006,37 +3003,40 @@ async function generateDemoPng() {
       "image/png"
     );
   });
-  return new File([blob], "omniconvert-banner.png", { type: "image/png" });
+  return new File([blob], "studio-portrait.png", { type: "image/png" });
 }
 function generateDemoCsv() {
   const csv = [
-    "quarter,region,local_jobs,server_jobs,bandwidth_saved_mb,avg_latency_ms",
-    "2026-Q1,North America,48210,3120,18420.5,42",
-    "2026-Q1,Europe,39400,2480,15110.2,39",
-    "2026-Q2,North America,61540,3890,24390.8,37",
-    "2026-Q2,Europe,52190,2950,20140.0,35",
-    "2026-Q3,Asia Pacific,44880,2610,17650.4,41",
-    "2026-Q4,Global,78920,4110,31820.9,33"
+    "id,sku,product_name,category,price,stock,is_active",
+    "101,PROD-1001,Wireless Noise-Canceling Headphones,Audio,299.99,450,true",
+    "102,PROD-1002,Mechanical Keyboard - Cherry MX Blue,Accessories,149.50,120,true",
+    "103,PROD-1003,Ergonomic Office Chair (Mesh),Furniture,499.00,85,true",
+    "104,PROD-1004,27-inch 4K IPS Monitor,Displays,399.00,210,true",
+    "105,PROD-1005,USB-C Docking Station (100W PD),Accessories,89.99,500,true",
+    "106,PROD-1006,Bluetooth Optical Mouse,Accessories,45.00,800,false"
   ].join("\n");
-  return new File([csv], "quarterly-metrics.csv", { type: "text/csv" });
+  return new File([csv], "product-catalog.csv", { type: "text/csv" });
 }
 function generateDemoMarkdown() {
   const md = [
-    "# OmniConvert Hybrid Architecture Report",
+    "# OmniConvert v2.0 Release Notes",
     "",
-    "## Executive Summary",
-    "OmniConvert routes 85-95% of file conversions directly inside the browser using OffscreenCanvas, WebAudio, CompressionStream, and deterministic Web Workers.",
+    "## What's New in this Release",
+    "We are excited to announce the latest major update to the **OmniConvert Engine**.",
     "",
-    "## Execution Tiers",
-    "- **LOCAL_NATIVE**: Hardware-accelerated Canvas 2D and WebAudio PCM pipelines with zero upload.",
-    "- **LOCAL_PURE_JS**: Deterministic JSON, CSV, YAML, XML, TOML, SQL, ZIP, and PDF generators.",
-    "- **LOCAL_WASM**: Lazy-cached FFmpeg & ImageMagick WebAssembly sandboxes.",
-    "- **SERVER_FALLBACK**: Managed 3-lane server pipeline for LibreOffice DOCX/PPTX/XLSX and heavy media.",
+    "### Key Features",
+    "- **Invisible Hybrid Execution**: Users seamlessly get hardware-accelerated local conversion or high-precision server fallbacks without being asked.",
+    "- **Enhanced Privacy**: Local conversions ensure *0 KB* of data leaves the device.",
+    "- **Studio Quality Audio**: Support for downmixing, peak normalization, and resampling.",
     "",
-    "## Privacy Guarantee",
-    "Local jobs transfer **0 KB** over the network. Server fallback jobs run inside quarantined scratch directories with a strict 15-minute TTL."
+    "### Fixes & Improvements",
+    "1. Improved memory management for heavy PNG/WEBP exports.",
+    "2. Added clean 2-space indentation presets for JSON.",
+    "3. Optimized LibreOffice and Pandoc integration for document rendering.",
+    "",
+    "*Thank you for using OmniConvert!*"
   ].join("\n");
-  return new File([md], "architecture-notes.md", { type: "text/markdown" });
+  return new File([md], "release-notes.md", { type: "text/markdown" });
 }
 function generateDemoWav() {
   const sampleRate = 44100;
@@ -3057,7 +3057,7 @@ function generateDemoWav() {
     right[i] = sample * 0.92;
   }
   const wavBytes = encodeChannelsToWav([left, right], sampleRate, { bitDepth: 16 });
-  return new File([wavBytes.buffer], "synth-chord.wav", { type: "audio/wav" });
+  return new File([wavBytes.buffer], "ambient-synth.wav", { type: "audio/wav" });
 }
 async function generateDemoDocx() {
   const enc = new TextEncoder();
@@ -3074,8 +3074,8 @@ async function generateDemoDocx() {
   const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:body>
-    <w:p><w:r><w:t>OmniConvert Sample Office Document</w:t></w:r></w:p>
-    <w:p><w:r><w:t>This DOCX triggers Tier 4 Managed Server Fallback (lane: document).</w:t></w:r></w:p>
+    <w:p><w:r><w:t>Executive Brief</w:t></w:r></w:p>
+    <w:p><w:r><w:t>This confidential document outlines the strategic priorities for Q4 2026.</w:t></w:r></w:p>
   </w:body>
 </w:document>`;
   const zipBytes = await createZipArchive([
@@ -3083,7 +3083,7 @@ async function generateDemoDocx() {
     { name: "_rels/.rels", data: enc.encode(rels) },
     { name: "word/document.xml", data: enc.encode(documentXml) }
   ]);
-  return new File([zipBytes.buffer], "board-deck-sample.docx", {
+  return new File([zipBytes.buffer], "executive-brief.docx", {
     type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
   });
 }
@@ -3167,7 +3167,7 @@ var ServerFallbackClient = class {
     onProgress?.({
       status: "uploading-server",
       progressPercent: 10,
-      stageMessage: `Uploading ${(file.size / 1024).toFixed(1)} KB to managed server...`
+      stageMessage: `Preparing high-precision conversion...`
     });
     const uploadResp = await fetch(`${this.baseUrl}/api/v1/jobs`, {
       method: "POST",
@@ -3195,7 +3195,7 @@ var ServerFallbackClient = class {
     onProgress?.({
       status: createdJob.status,
       progressPercent: Math.max(20, createdJob.progressPercent ?? 20),
-      stageMessage: createdJob.stageMessage || "Queued on server lane...",
+      stageMessage: createdJob.stageMessage || "Converting document...",
       jobRecord: createdJob
     });
     const abortHandler = () => {
@@ -3211,7 +3211,7 @@ var ServerFallbackClient = class {
       onProgress?.({
         status: "processing-server",
         progressPercent: 95,
-        stageMessage: "Downloading converted artifact...",
+        stageMessage: "Finalizing output...",
         jobRecord: completedJob
       });
       const dlResp = await fetch(downloadUrl, { signal });
@@ -3278,7 +3278,7 @@ var ServerFallbackClient = class {
           onProgress?.({
             status: data.status,
             progressPercent: data.progressPercent ?? 50,
-            stageMessage: data.stageMessage || "Processing on server...",
+            stageMessage: data.stageMessage || "Converting document...",
             jobRecord: data
           });
           if (data.status === "completed" || data.status === "failed" || data.status === "cancelled") {
@@ -3296,7 +3296,7 @@ var ServerFallbackClient = class {
           onProgress?.({
             status: job.status,
             progressPercent: job.progressPercent ?? 50,
-            stageMessage: job.stageMessage || "Processing on server...",
+            stageMessage: job.stageMessage || "Converting document...",
             jobRecord: job
           });
           if (job.status === "completed" || job.status === "failed" || job.status === "cancelled") {
@@ -3524,8 +3524,510 @@ var WorkerPool = class {
   }
 };
 
-// src/client/ui/app.ts
+// src/client/ui/format-picker.ts
+var PICKER_CATEGORY_TABS = [
+  { id: "all", label: "All" },
+  { id: "image", label: "Image" },
+  { id: "audio", label: "Audio" },
+  { id: "document", label: "Document" },
+  { id: "data", label: "Data" },
+  { id: "archive", label: "Archive" }
+];
+var formatRegistryByItem = /* @__PURE__ */ new Map();
+var containerAbortControllers = /* @__PURE__ */ new WeakMap();
 function escapeHtml(text) {
+  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+}
+function normalizePickerCategory(category) {
+  const normalized = category.trim().toLowerCase();
+  switch (normalized) {
+    case "image":
+    case "vector":
+      return "image";
+    case "audio":
+      return "audio";
+    case "document":
+    case "ebook":
+      return "document";
+    case "data":
+      return "data";
+    case "archive":
+      return "archive";
+    default:
+      return "all";
+  }
+}
+function filterPickerFormats(formats, query, category = "all") {
+  const q = query.trim().toLowerCase();
+  return formats.filter((fmt) => {
+    if (category !== "all" && normalizePickerCategory(fmt.category) !== category) {
+      return false;
+    }
+    if (!q) return true;
+    const inId = fmt.id.toLowerCase().includes(q);
+    const inLabel = fmt.label.toLowerCase().includes(q);
+    const inName = fmt.name.toLowerCase().includes(q);
+    const inDesc = (fmt.description ?? "").toLowerCase().includes(q);
+    const inExt = (fmt.extensions ?? []).some((ext) => ext.toLowerCase().includes(q));
+    return inId || inLabel || inName || inDesc || inExt;
+  });
+}
+function serializeFormatsAttribute(formats) {
+  const compact = formats.map((f) => ({
+    id: f.id,
+    label: f.label,
+    name: f.name,
+    category: f.category,
+    description: f.description ?? f.name,
+    extensions: f.extensions ?? [f.id]
+  }));
+  return escapeHtml(JSON.stringify(compact));
+}
+function parseFormatsAttribute(raw) {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (item) => typeof item === "object" && item !== null && typeof item.id === "string" && typeof item.label === "string"
+    );
+  } catch {
+    return [];
+  }
+}
+function createFormatPickerTriggerHtml(itemId, currentTargetId, compatibleFormats) {
+  formatRegistryByItem.set(itemId, [...compatibleFormats]);
+  const normalizedCurrent = currentTargetId.trim().toLowerCase();
+  const currentFmt = compatibleFormats.find((f) => f.id.toLowerCase() === normalizedCurrent);
+  const displayLabel = currentFmt?.label ?? (currentTargetId ? currentTargetId.toUpperCase() : "SELECT");
+  const displayTitle = currentFmt ? `${currentFmt.label} \u2014 ${currentFmt.name}` : `Output format: ${displayLabel}`;
+  return `
+    <div class="format-picker-wrap" data-format-picker-wrap data-item-id="${escapeHtml(itemId)}">
+      <button
+        type="button"
+        class="format-picker-trigger"
+        data-action="open-format-picker"
+        data-id="${escapeHtml(itemId)}"
+        data-item-id="${escapeHtml(itemId)}"
+        data-target-id="${escapeHtml(normalizedCurrent)}"
+        data-formats="${serializeFormatsAttribute(compatibleFormats)}"
+        aria-haspopup="listbox"
+        aria-expanded="false"
+        title="${escapeHtml(displayTitle)}"
+      >
+        <span class="format-picker-trigger-label">${escapeHtml(displayLabel)}</span>
+        <svg class="format-picker-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+    </div>
+  `.trim();
+}
+var FormatPickerPopover = class {
+  popoverEl = null;
+  activeTrigger = null;
+  activeItemId = null;
+  currentTargetId = "";
+  formats = [];
+  searchQuery = "";
+  activeCategory = "all";
+  activeOptionIndex = 0;
+  onSelectCallback = null;
+  globalAbortController = null;
+  isOpen() {
+    return this.popoverEl !== null && !this.popoverEl.classList.contains("hidden");
+  }
+  getActiveItemId() {
+    return this.activeItemId;
+  }
+  open(triggerEl, itemId, currentTargetId, formats, onSelect) {
+    if (typeof document === "undefined") return;
+    if (this.isOpen() && this.activeItemId === itemId && this.activeTrigger === triggerEl) {
+      this.close();
+      return;
+    }
+    this.close();
+    this.activeTrigger = triggerEl;
+    this.activeItemId = itemId;
+    this.currentTargetId = currentTargetId.trim().toLowerCase();
+    this.formats = [...formats];
+    this.searchQuery = "";
+    this.activeCategory = "all";
+    this.activeOptionIndex = Math.max(
+      0,
+      this.formats.findIndex((f) => f.id.toLowerCase() === this.currentTargetId)
+    );
+    this.onSelectCallback = onSelect;
+    triggerEl.setAttribute("aria-expanded", "true");
+    triggerEl.classList.add("is-open");
+    const popover = this.buildPopoverElement();
+    this.popoverEl = popover;
+    document.body.appendChild(popover);
+    this.renderCategories();
+    this.renderGrid();
+    this.positionPopover();
+    this.bindGlobalEvents();
+    const searchInput = popover.querySelector(".format-picker-search");
+    if (searchInput) {
+      requestAnimationFrame(() => searchInput.focus({ preventScroll: true }));
+    }
+  }
+  close(restoreFocus = false) {
+    if (this.globalAbortController) {
+      this.globalAbortController.abort();
+      this.globalAbortController = null;
+    }
+    const prevTrigger = this.activeTrigger;
+    if (prevTrigger) {
+      prevTrigger.setAttribute("aria-expanded", "false");
+      prevTrigger.classList.remove("is-open");
+    }
+    if (this.popoverEl) {
+      this.popoverEl.remove();
+      this.popoverEl = null;
+    }
+    this.activeTrigger = null;
+    this.activeItemId = null;
+    this.onSelectCallback = null;
+    if (restoreFocus && prevTrigger && prevTrigger.isConnected) {
+      prevTrigger.focus({ preventScroll: true });
+    }
+  }
+  destroy() {
+    this.close(false);
+  }
+  buildPopoverElement() {
+    const popover = document.createElement("div");
+    popover.className = "format-picker-popover";
+    popover.setAttribute("role", "dialog");
+    popover.setAttribute("aria-label", "Select output format");
+    popover.innerHTML = `
+      <div class="format-picker-search-wrap">
+        <svg class="format-picker-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+          type="search"
+          class="format-picker-search"
+          placeholder="Search format... e.g. WEBP, MP3, JSON"
+          aria-label="Search target format"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <kbd class="format-picker-kbd" aria-hidden="true">ESC</kbd>
+      </div>
+      <div class="format-picker-tabs" role="tablist" aria-label="Format categories"></div>
+      <div class="format-picker-grid" role="listbox" aria-label="Compatible output formats"></div>
+      <div class="format-picker-footer">
+        <span class="format-picker-desc-title"></span>
+        <span class="format-picker-desc-body">Hover a format to inspect details</span>
+      </div>
+    `;
+    const searchInput = popover.querySelector(".format-picker-search");
+    searchInput?.addEventListener("input", () => {
+      this.searchQuery = searchInput.value;
+      this.activeOptionIndex = 0;
+      this.renderGrid();
+    });
+    searchInput?.addEventListener("keydown", (e) => {
+      this.handleKeyNavigation(e);
+    });
+    popover.addEventListener("keydown", (e) => {
+      if (e.target !== searchInput) {
+        this.handleKeyNavigation(e);
+      }
+    });
+    const tabsEl = popover.querySelector(".format-picker-tabs");
+    tabsEl?.addEventListener("click", (e) => {
+      const btn = e.target.closest(".format-picker-tab");
+      if (!btn || btn.disabled) return;
+      const cat = btn.dataset.category;
+      if (!cat) return;
+      this.activeCategory = cat;
+      this.activeOptionIndex = 0;
+      this.renderCategories();
+      this.renderGrid();
+    });
+    const gridEl = popover.querySelector(".format-picker-grid");
+    gridEl?.addEventListener("click", (e) => {
+      const option = e.target.closest(".format-picker-option");
+      if (!option) return;
+      const formatId = option.dataset.formatId;
+      if (!formatId) return;
+      this.commitSelection(formatId);
+    });
+    gridEl?.addEventListener("mouseover", (e) => {
+      const option = e.target.closest(".format-picker-option");
+      if (!option) return;
+      const formatId = option.dataset.formatId;
+      if (formatId) this.updateFooterPreview(formatId);
+    });
+    gridEl?.addEventListener("focusin", (e) => {
+      const option = e.target.closest(".format-picker-option");
+      if (!option) return;
+      const formatId = option.dataset.formatId;
+      if (formatId) this.updateFooterPreview(formatId);
+    });
+    return popover;
+  }
+  renderCategories() {
+    const tabsEl = this.popoverEl?.querySelector(".format-picker-tabs");
+    if (!tabsEl) return;
+    tabsEl.innerHTML = PICKER_CATEGORY_TABS.map((tab) => {
+      const count = tab.id === "all" ? this.formats.length : this.formats.filter((f) => normalizePickerCategory(f.category) === tab.id).length;
+      const isActive = this.activeCategory === tab.id;
+      const isDisabled = tab.id !== "all" && count === 0;
+      return `
+        <button
+          type="button"
+          class="format-picker-tab ${isActive ? "is-active" : ""}"
+          role="tab"
+          aria-selected="${isActive ? "true" : "false"}"
+          data-category="${tab.id}"
+          ${isDisabled ? "disabled" : ""}
+        >
+          <span>${escapeHtml(tab.label)}</span>
+          ${count > 0 && tab.id !== "all" ? `<span class="format-picker-tab-count">${count}</span>` : ""}
+        </button>
+      `;
+    }).join("");
+  }
+  renderGrid() {
+    const gridEl = this.popoverEl?.querySelector(".format-picker-grid");
+    if (!gridEl) return;
+    const filtered = filterPickerFormats(this.formats, this.searchQuery, this.activeCategory);
+    if (filtered.length === 0) {
+      gridEl.innerHTML = `
+        <div class="format-picker-empty">
+          No formats match <strong>${escapeHtml(this.searchQuery || this.activeCategory)}</strong>
+        </div>
+      `;
+      this.updateFooterPreview(null);
+      return;
+    }
+    if (this.activeOptionIndex >= filtered.length) {
+      this.activeOptionIndex = 0;
+    }
+    gridEl.innerHTML = filtered.map((fmt, idx) => {
+      const isSelected = fmt.id.toLowerCase() === this.currentTargetId;
+      const isFocused = idx === this.activeOptionIndex;
+      const desc = fmt.description ?? fmt.name;
+      return `
+          <button
+            type="button"
+            class="format-picker-option ${isSelected ? "is-selected" : ""} ${isFocused ? "is-highlighted" : ""}"
+            role="option"
+            aria-selected="${isSelected ? "true" : "false"}"
+            data-format-id="${escapeHtml(fmt.id)}"
+            title="${escapeHtml(`${fmt.name} \u2014 ${desc}`)}"
+          >
+            <span class="format-picker-option-top">
+              <span class="format-picker-ext">${escapeHtml(fmt.label)}</span>
+              ${isSelected ? `<svg class="format-picker-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>` : ""}
+            </span>
+            <span class="format-picker-option-hint">${escapeHtml(desc)}</span>
+          </button>
+        `;
+    }).join("");
+    const previewTarget = filtered[this.activeOptionIndex]?.id ?? filtered.find((f) => f.id.toLowerCase() === this.currentTargetId)?.id ?? filtered[0]?.id ?? null;
+    this.updateFooterPreview(previewTarget);
+  }
+  updateFooterPreview(formatId) {
+    const titleEl = this.popoverEl?.querySelector(".format-picker-desc-title");
+    const bodyEl = this.popoverEl?.querySelector(".format-picker-desc-body");
+    if (!titleEl || !bodyEl) return;
+    if (!formatId) {
+      titleEl.textContent = "";
+      bodyEl.textContent = "Try another keyword or switch to All";
+      return;
+    }
+    const fmt = this.formats.find((f) => f.id.toLowerCase() === formatId.toLowerCase());
+    if (!fmt) return;
+    titleEl.textContent = fmt.name;
+    bodyEl.textContent = fmt.description || `${fmt.label} output format`;
+  }
+  handleKeyNavigation(e) {
+    if (!this.popoverEl) return;
+    if (e.key === "Escape") {
+      e.preventDefault();
+      this.close(true);
+      return;
+    }
+    const options = Array.from(
+      this.popoverEl.querySelectorAll(".format-picker-option")
+    );
+    if (options.length === 0) return;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      const step = e.key === "ArrowDown" ? 3 : 1;
+      this.activeOptionIndex = Math.min(options.length - 1, this.activeOptionIndex + step);
+      this.syncHighlightedOption(options);
+      return;
+    }
+    if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const step = e.key === "ArrowUp" ? 3 : 1;
+      this.activeOptionIndex = Math.max(0, this.activeOptionIndex - step);
+      this.syncHighlightedOption(options);
+      return;
+    }
+    if (e.key === "Enter") {
+      const targetOption = options[this.activeOptionIndex] ?? options[0];
+      const formatId = targetOption?.dataset.formatId;
+      if (formatId) {
+        e.preventDefault();
+        this.commitSelection(formatId);
+      }
+    }
+  }
+  syncHighlightedOption(options) {
+    options.forEach((opt, i) => {
+      opt.classList.toggle("is-highlighted", i === this.activeOptionIndex);
+    });
+    const active = options[this.activeOptionIndex];
+    if (active) {
+      active.scrollIntoView({ block: "nearest" });
+      const fmtId = active.dataset.formatId;
+      if (fmtId) this.updateFooterPreview(fmtId);
+    }
+  }
+  commitSelection(targetFormatId) {
+    const itemId = this.activeItemId;
+    const trigger = this.activeTrigger;
+    const cb = this.onSelectCallback;
+    if (trigger) {
+      const fmt = this.formats.find((f) => f.id.toLowerCase() === targetFormatId.toLowerCase());
+      const labelEl = trigger.querySelector(".format-picker-trigger-label");
+      if (labelEl && fmt) {
+        labelEl.textContent = fmt.label;
+      }
+      trigger.dataset.targetId = targetFormatId;
+      const wrap = trigger.closest(".format-picker-wrap");
+      const siblingSelect = wrap?.parentElement?.querySelector(
+        `select[data-action="target"][data-id="${itemId ?? ""}"]`
+      );
+      if (siblingSelect && siblingSelect.value !== targetFormatId) {
+        siblingSelect.value = targetFormatId;
+      }
+    }
+    this.close(true);
+    if (itemId && cb) {
+      cb(itemId, targetFormatId);
+    }
+  }
+  positionPopover() {
+    if (!this.popoverEl || !this.activeTrigger) return;
+    const triggerRect = this.activeTrigger.getBoundingClientRect();
+    const popRect = this.popoverEl.getBoundingClientRect();
+    const viewportW = window.innerWidth;
+    const viewportH = window.innerHeight;
+    const gap = 6;
+    const margin = 12;
+    const popWidth = Math.min(popRect.width || 360, viewportW - margin * 2);
+    const popHeight = popRect.height || 340;
+    let left = triggerRect.left;
+    if (left + popWidth > viewportW - margin) {
+      left = Math.max(margin, triggerRect.right - popWidth);
+    }
+    left = Math.max(margin, Math.min(left, viewportW - popWidth - margin));
+    const spaceBelow = viewportH - triggerRect.bottom - margin;
+    const spaceAbove = triggerRect.top - margin;
+    let top;
+    if (spaceBelow >= popHeight || spaceBelow >= spaceAbove) {
+      top = Math.min(triggerRect.bottom + gap, viewportH - popHeight - margin);
+      this.popoverEl.dataset.placement = "bottom";
+    } else {
+      top = Math.max(margin, triggerRect.top - popHeight - gap);
+      this.popoverEl.dataset.placement = "top";
+    }
+    this.popoverEl.style.left = `${Math.round(left)}px`;
+    this.popoverEl.style.top = `${Math.round(top)}px`;
+  }
+  bindGlobalEvents() {
+    this.globalAbortController = new AbortController();
+    const { signal } = this.globalAbortController;
+    document.addEventListener(
+      "pointerdown",
+      (e) => {
+        const target = e.target;
+        if (!target) return;
+        if (this.popoverEl?.contains(target)) return;
+        if (this.activeTrigger?.contains(target)) return;
+        this.close(false);
+      },
+      { capture: true, signal }
+    );
+    window.addEventListener(
+      "resize",
+      () => {
+        if (!this.activeTrigger?.isConnected) {
+          this.close(false);
+          return;
+        }
+        this.positionPopover();
+      },
+      { signal }
+    );
+    window.addEventListener(
+      "scroll",
+      (e) => {
+        if (this.popoverEl && e.target instanceof Node && this.popoverEl.contains(e.target)) {
+          return;
+        }
+        if (!this.activeTrigger?.isConnected) {
+          this.close(false);
+          return;
+        }
+        this.positionPopover();
+      },
+      { capture: true, signal }
+    );
+  }
+};
+var sharedPopover = new FormatPickerPopover();
+function attachFormatPickerListeners(container, onSelect) {
+  const prev = containerAbortControllers.get(container);
+  if (prev) {
+    prev.abort();
+  }
+  const controller = new AbortController();
+  containerAbortControllers.set(container, controller);
+  container.addEventListener(
+    "click",
+    (e) => {
+      const trigger = e.target.closest(
+        '[data-action="open-format-picker"], .format-picker-trigger'
+      );
+      if (!trigger || !container.contains(trigger)) return;
+      if (trigger.disabled || trigger.getAttribute("aria-disabled") === "true") return;
+      const itemId = trigger.dataset.itemId ?? trigger.dataset.id ?? "";
+      if (!itemId) return;
+      const currentTargetId = trigger.dataset.targetId ?? "";
+      const formats = formatRegistryByItem.get(itemId) ?? parseFormatsAttribute(trigger.dataset.formats);
+      sharedPopover.open(trigger, itemId, currentTargetId, formats, onSelect);
+    },
+    { signal: controller.signal }
+  );
+}
+
+// src/client/ui/app.ts
+var IMAGE_EXTENSIONS = /* @__PURE__ */ new Set(["png", "jpg", "jpeg", "webp", "avif", "gif", "bmp", "ico", "svg"]);
+var TEXT_TARGET_IDS = /* @__PURE__ */ new Set([
+  "json",
+  "csv",
+  "tsv",
+  "yaml",
+  "xml",
+  "toml",
+  "ini",
+  "env",
+  "sql",
+  "md",
+  "html",
+  "txt"
+]);
+function escapeHtml2(text) {
   return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
 }
 function formatBytes(bytes) {
@@ -3534,16 +4036,95 @@ function formatBytes(bytes) {
   if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
-function tierBadgeMeta(decision) {
-  switch (decision.selectedTier) {
-    case "LOCAL_NATIVE":
-      return { label: "On-device", tierClass: "local", icon: "\u2713" };
-    case "LOCAL_PURE_JS":
-      return { label: "Worker", tierClass: "local", icon: "\u2713" };
-    case "LOCAL_WASM":
-      return { label: "WASM", tierClass: "wasm", icon: "\u{1F9E9}" };
-    case "SERVER_FALLBACK":
-      return { label: `Server (${decision.serverLane})`, tierClass: "server", icon: "\u2601" };
+function computeSizeDelta(inputBytes, outputBytes) {
+  const pct = (outputBytes - inputBytes) / Math.max(1, inputBytes) * 100;
+  const rounded = Math.round(pct);
+  const pctStr = rounded <= 0 ? `${rounded}%` : `+${rounded}%`;
+  const savingsLabel = rounded < 0 ? `Saved ${Math.abs(rounded)}%` : rounded === 0 ? "Same size" : `+${rounded}% larger`;
+  return { pct, pctStr, savingsLabel, isSmaller: rounded <= 0 };
+}
+function isBusyStatus(status) {
+  return status === "inspecting" || status === "queued-local" || status === "processing-local" || status === "uploading-server" || status === "queued-server" || status === "processing-server";
+}
+function sanitizeStageMessage(status, rawMessage) {
+  if (status === "pending") return "Ready to convert";
+  if (status === "queued-local" || status === "queued-server") return "Waiting in queue...";
+  if (status === "uploading-server") return "Preparing conversion...";
+  if (status === "processing-server") return "Converting file...";
+  if (status === "cancelled") return "Cancelled";
+  if (status === "failed") return "Conversion failed";
+  if (!rawMessage) return "Converting...";
+  return rawMessage.replace(/Server Fallback\s*\([^)]*\)/gi, "cloud engine").replace(/server lane[:\s]*\w+/gi, "processing queue").replace(/LOCAL_\w+/g, "browser");
+}
+function statusBadgeMeta(item) {
+  if (isBusyStatus(item.status)) {
+    return {
+      label: `Converting... ${Math.round(item.progressPercent)}%`,
+      pillClass: "server",
+      inlineStyle: "cursor:default;"
+    };
+  }
+  if (item.status === "completed" && item.output) {
+    const { pctStr } = computeSizeDelta(item.file.size, item.output.bytes.length);
+    return {
+      label: `Done \xB7 ${pctStr}`,
+      pillClass: "local",
+      inlineStyle: "cursor:default;"
+    };
+  }
+  if (item.status === "failed") {
+    return {
+      label: "Failed",
+      pillClass: "",
+      inlineStyle: "cursor:default;background:var(--accent-danger-bg);color:var(--accent-danger);border:1px solid var(--accent-danger-border);"
+    };
+  }
+  if (item.status === "cancelled") {
+    return {
+      label: "Cancelled",
+      pillClass: "",
+      inlineStyle: "cursor:default;background:var(--surface-muted);color:var(--text-muted);border:1px solid var(--border);"
+    };
+  }
+  return {
+    label: "Ready",
+    pillClass: "",
+    inlineStyle: "cursor:default;background:var(--surface-muted);color:var(--text-secondary);border:1px solid var(--border);"
+  };
+}
+function loadImageDimensions(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      resolve(
+        img.naturalWidth > 0 && img.naturalHeight > 0 ? { width: img.naturalWidth, height: img.naturalHeight } : null
+      );
+    };
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+    }
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
   }
 }
 var OmniConvertApp = class {
@@ -3552,11 +4133,9 @@ var OmniConvertApp = class {
   device;
   workerPool;
   items = [];
-  serverHealth = null;
-  localCompletedCount = 0;
-  serverCompletedCount = 0;
-  bandwidthSavedBytes = 0;
-  // DOM elements
+  completedCount = 0;
+  bytesProcessed = 0;
+  tempPreviewUrls = [];
   dropzone = document.getElementById("dropzone");
   fileInput = document.getElementById("file-input");
   queueList = document.getElementById("queue-list");
@@ -3567,7 +4146,6 @@ var OmniConvertApp = class {
   queueRouteBreakdown = document.getElementById("queue-route-breakdown");
   downloadZipBtn = document.getElementById("download-zip-btn");
   batchTargetSelect = document.getElementById("batch-target-select");
-  opsBackdrop = document.getElementById("ops-drawer-backdrop");
   previewBackdrop = document.getElementById("preview-backdrop");
   previewTitle = document.getElementById("preview-title");
   previewBody = document.getElementById("preview-body");
@@ -3578,17 +4156,10 @@ var OmniConvertApp = class {
     this.initTheme();
     this.device = await DeviceProfiler.detect();
     this.workerPool = new WorkerPool(this.device.hardwareConcurrency);
-    this.workerPool.subscribe((stats) => this.renderWorkerTelemetry(stats));
-    this.renderDeviceTelemetry();
     this.renderLandingCategoryTabs("image");
     this.populateBatchTargetDropdown();
+    this.updateTopCounters();
     this.bindEvents();
-    await this.refreshServerHealth();
-    setInterval(() => {
-      if (!this.opsBackdrop.classList.contains("hidden")) {
-        void this.refreshServerHealth();
-      }
-    }, 5e3);
   }
   initTheme() {
     const saved = localStorage.getItem("omniconvert-theme");
@@ -3615,17 +4186,38 @@ var OmniConvertApp = class {
     localStorage.setItem("omniconvert-theme", next);
     this.updateThemeIcons(next);
   }
+  openPasteModal() {
+    this.pasteModalBackdrop?.classList.remove("hidden");
+    const textarea = document.getElementById("paste-textarea");
+    textarea?.focus();
+  }
+  closePasteModal() {
+    this.pasteModalBackdrop?.classList.add("hidden");
+  }
+  closePreviewModal() {
+    this.previewBackdrop?.classList.add("hidden");
+    if (this.previewBody) {
+      this.previewBody.innerHTML = "";
+    }
+    for (const url of this.tempPreviewUrls) {
+      URL.revokeObjectURL(url);
+    }
+    this.tempPreviewUrls = [];
+  }
   bindEvents() {
     document.getElementById("theme-toggle-btn")?.addEventListener("click", () => this.toggleTheme());
-    document.getElementById("browse-files-btn")?.addEventListener("click", () => this.fileInput.click());
-    this.fileInput.addEventListener("change", () => {
-      if (this.fileInput.files && this.fileInput.files.length > 0) {
+    document.getElementById("browse-files-btn")?.addEventListener("click", () => {
+      this.fileInput?.click();
+    });
+    this.fileInput?.addEventListener("change", () => {
+      if (this.fileInput?.files && this.fileInput.files.length > 0) {
         void this.ingestFiles(Array.from(this.fileInput.files));
         this.fileInput.value = "";
       }
     });
     document.getElementById("load-demo-btn")?.addEventListener("click", async () => {
       const btn = document.getElementById("load-demo-btn");
+      if (!btn) return;
       btn.disabled = true;
       const oldText = btn.textContent;
       btn.textContent = "Generating sample batch...";
@@ -3637,58 +4229,70 @@ var OmniConvertApp = class {
         btn.textContent = oldText;
       }
     });
-    document.getElementById("paste-text-btn")?.addEventListener("click", () => {
-      this.pasteModalBackdrop.classList.remove("hidden");
+    document.getElementById("paste-text-btn")?.addEventListener("click", () => this.openPasteModal());
+    document.getElementById("paste-text-btn-hero")?.addEventListener("click", () => this.openPasteModal());
+    document.getElementById("close-paste-modal-btn")?.addEventListener("click", () => this.closePasteModal());
+    document.getElementById("cancel-paste-btn")?.addEventListener("click", () => this.closePasteModal());
+    this.pasteModalBackdrop?.addEventListener("click", (e) => {
+      if (e.target === this.pasteModalBackdrop) this.closePasteModal();
     });
-    document.getElementById("close-paste-modal-btn")?.addEventListener("click", () => {
-      this.pasteModalBackdrop.classList.add("hidden");
-    });
-    document.getElementById("cancel-paste-btn")?.addEventListener("click", () => {
-      this.pasteModalBackdrop.classList.add("hidden");
+    document.getElementById("paste-source-format")?.addEventListener("change", (e) => {
+      const ext = e.target.value;
+      const nameInput = document.getElementById("paste-filename");
+      if (nameInput && /^snippet(\.[a-z0-9]+)?$/i.test(nameInput.value.trim())) {
+        nameInput.value = `snippet.${ext}`;
+      }
     });
     document.getElementById("add-paste-btn")?.addEventListener("click", () => {
       const textarea = document.getElementById("paste-textarea");
       const fmtSelect = document.getElementById("paste-source-format");
       const nameInput = document.getElementById("paste-filename");
-      const text = textarea.value.trim();
+      const text = textarea?.value.trim() ?? "";
       if (!text) return;
-      const ext = fmtSelect.value;
-      const name = nameInput.value.trim() || `snippet.${ext}`;
+      const ext = fmtSelect?.value ?? "txt";
+      const name = nameInput?.value.trim() || `snippet.${ext}`;
       const blob = new Blob([text], { type: "text/plain" });
       const file = new File([blob], name, { type: "text/plain" });
       void this.ingestFiles([file]);
-      textarea.value = "";
-      this.pasteModalBackdrop.classList.add("hidden");
+      if (textarea) textarea.value = "";
+      this.closePasteModal();
     });
     document.getElementById("open-formats-btn")?.addEventListener("click", () => {
       this.renderFormatsExplorer();
-      this.formatsModalBackdrop.classList.remove("hidden");
+      this.formatsModalBackdrop?.classList.remove("hidden");
     });
     document.getElementById("close-formats-modal-btn")?.addEventListener("click", () => {
-      this.formatsModalBackdrop.classList.add("hidden");
+      this.formatsModalBackdrop?.classList.add("hidden");
+    });
+    this.formatsModalBackdrop?.addEventListener("click", (e) => {
+      if (e.target === this.formatsModalBackdrop) {
+        this.formatsModalBackdrop?.classList.add("hidden");
+      }
     });
     document.getElementById("formats-search-input")?.addEventListener("input", (e) => {
       const query = e.target.value.toLowerCase();
       this.renderFormatsExplorer(query);
     });
-    ["dragenter", "dragover"].forEach((evtName) => {
-      this.dropzone.addEventListener(evtName, (e) => {
-        e.preventDefault();
-        this.dropzone.classList.add("drag-active");
+    if (this.dropzone) {
+      ["dragenter", "dragover"].forEach((evtName) => {
+        this.dropzone?.addEventListener(evtName, (e) => {
+          e.preventDefault();
+          this.dropzone?.classList.add("drag-active");
+        });
       });
-    });
-    ["dragleave", "drop"].forEach((evtName) => {
-      this.dropzone.addEventListener(evtName, (e) => {
-        e.preventDefault();
-        this.dropzone.classList.remove("drag-active");
+      ["dragleave", "drop"].forEach((evtName) => {
+        this.dropzone?.addEventListener(evtName, (e) => {
+          e.preventDefault();
+          this.dropzone?.classList.remove("drag-active");
+        });
       });
-    });
-    this.dropzone.addEventListener("drop", (e) => {
-      const dt = e.dataTransfer;
-      if (dt?.files && dt.files.length > 0) {
-        void this.ingestFiles(Array.from(dt.files));
-      }
-    });
+      this.dropzone.addEventListener("drop", (e) => {
+        const dt = e.dataTransfer;
+        if (dt?.files && dt.files.length > 0) {
+          void this.ingestFiles(Array.from(dt.files));
+        }
+      });
+    }
     document.getElementById("convert-all-btn")?.addEventListener("click", () => {
       void this.convertAllReady();
     });
@@ -3702,20 +4306,23 @@ var OmniConvertApp = class {
       this.items = this.items.filter((i) => i.status !== "completed" && i.status !== "cancelled");
       this.renderQueue();
     });
-    this.downloadZipBtn.addEventListener("click", () => {
+    this.downloadZipBtn?.addEventListener("click", () => {
       void this.downloadAllAsZip();
     });
-    this.batchTargetSelect.addEventListener("change", () => {
-      const target = this.batchTargetSelect.value;
+    this.batchTargetSelect?.addEventListener("change", () => {
+      const target = this.batchTargetSelect?.value;
       if (!target) return;
       for (const item of this.items) {
+        if (isBusyStatus(item.status)) continue;
         const compatible = getCompatibleTargets(item.sourceFormat);
         if (compatible.some((f) => f.id === target)) {
           item.targetFormat = target;
           item.presetId = "";
+          this.resetCompletedItemForReconvert(item);
           this.recomputeRouting(item);
         }
       }
+      if (this.batchTargetSelect) this.batchTargetSelect.value = "";
       this.renderQueue();
     });
     document.getElementById("landing-category-tabs")?.addEventListener("click", (e) => {
@@ -3726,95 +4333,37 @@ var OmniConvertApp = class {
       const cat = target.dataset.cat;
       this.renderLandingCategoryTabs(cat);
     });
-    document.getElementById("open-ops-drawer-btn")?.addEventListener("click", () => {
-      this.opsBackdrop.classList.remove("hidden");
-      void this.refreshServerHealth();
-      this.renderWorkerTelemetry(this.workerPool.getStats());
-    });
-    document.getElementById("close-ops-drawer-btn")?.addEventListener("click", () => {
-      this.opsBackdrop.classList.add("hidden");
-    });
-    this.opsBackdrop.addEventListener("click", (e) => {
-      if (e.target === this.opsBackdrop) this.opsBackdrop.classList.add("hidden");
-    });
-    document.getElementById("refresh-health-btn")?.addEventListener("click", () => {
-      void this.refreshServerHealth();
-    });
-    document.getElementById("recycle-workers-btn")?.addEventListener("click", () => {
-      this.workerPool.recycleAllHeavyWorkers();
-    });
-    document.getElementById("trigger-sweep-btn")?.addEventListener("click", async () => {
-      const res = await this.serverClient.triggerSweep();
-      const btn = document.getElementById("trigger-sweep-btn");
-      if (res) {
-        btn.textContent = `\u2713 Purged ${res.purgedDirs ?? 0} dirs`;
-        setTimeout(() => {
-          btn.textContent = "Run TTL sweep";
-        }, 2500);
-        await this.refreshServerHealth();
-      } else {
-        btn.textContent = "Server Offline";
-        setTimeout(() => {
-          btn.textContent = "Run TTL sweep";
-        }, 2e3);
-      }
-    });
     document.getElementById("close-preview-btn")?.addEventListener("click", () => {
-      this.previewBackdrop.classList.add("hidden");
-      this.previewBody.innerHTML = "";
+      this.closePreviewModal();
     });
-    this.previewBackdrop.addEventListener("click", (e) => {
+    this.previewBackdrop?.addEventListener("click", (e) => {
       if (e.target === this.previewBackdrop) {
-        this.previewBackdrop.classList.add("hidden");
-        this.previewBody.innerHTML = "";
+        this.closePreviewModal();
       }
     });
-  }
-  renderDeviceTelemetry() {
-    document.getElementById("device-cores-text").textContent = `${this.device.hardwareConcurrency} cores`;
-    document.getElementById("device-ram-text").textContent = `${this.device.safeBrowserMemoryCapMB} MB (${this.device.deviceMemoryGB} GB)`;
-    const coiText = document.getElementById("device-coi-text");
-    if (coiText) {
-      coiText.textContent = this.device.crossOriginIsolated ? "Active" : "Single-thread";
-    }
-    const footerText = document.getElementById("footer-device-summary");
-    if (footerText) {
-      footerText.textContent = `${this.device.hardwareConcurrency} Cores \xB7 ${this.device.safeBrowserMemoryCapMB} MB Safe Budget \xB7 ${this.device.crossOriginIsolated ? "SharedArrayBuffer Active" : "Single-thread"}`;
-    }
-    const capPills = document.getElementById("capability-pills");
-    if (capPills) {
-      const chips = [
-        { label: "OffscreenCanvas", ok: this.device.supportsOffscreenCanvas },
-        { label: "WebAudio PCM", ok: this.device.supportsWebAudio },
-        { label: "CompressionStream", ok: this.device.supportsCompressionStream },
-        { label: "OPFS Storage", ok: this.device.supportsOPFS },
-        { label: "WebCodecs", ok: this.device.supportsWebCodecs },
-        {
-          label: `Canvas Encoders: ${this.device.supportedCanvasEncodeMimes.map((m) => m.replace("image/", "").toUpperCase()).join(", ")}`,
-          ok: this.device.supportedCanvasEncodeMimes.length > 0
-        }
-      ];
-      capPills.innerHTML = chips.map((c) => `<span class="cap-chip ${c.ok ? "ok" : ""}">${c.ok ? "\u2713" : "\u25CB"} ${escapeHtml(c.label)}</span>`).join("");
-    }
-    this.updateTopCounters();
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      if (this.previewBackdrop && !this.previewBackdrop.classList.contains("hidden")) {
+        this.closePreviewModal();
+      } else if (this.pasteModalBackdrop && !this.pasteModalBackdrop.classList.contains("hidden")) {
+        this.closePasteModal();
+      } else if (this.formatsModalBackdrop && !this.formatsModalBackdrop.classList.contains("hidden")) {
+        this.formatsModalBackdrop.classList.add("hidden");
+      }
+    });
   }
   renderLandingCategoryTabs(category) {
     const container = document.getElementById("landing-format-chips");
     if (!container) return;
     const formats = CLIENT_FORMATS.filter((f) => f.category === category);
-    container.innerHTML = formats.map((f) => {
-      let badgeClass = "local";
-      if (!f.browserSupport.canEncodeNative && !f.browserSupport.canProcessPureJs) {
-        badgeClass = f.browserSupport.canProcessWasm ? "wasm" : "server";
-      }
-      return `
+    container.innerHTML = formats.map(
+      (f) => `
           <div class="format-chip">
-            <i class="legend-dot ${badgeClass}"></i>
-            <strong>${escapeHtml(f.label)}</strong>
-            <span>${escapeHtml(f.name)}</span>
+            <strong>${escapeHtml2(f.label)}</strong>
+            <span>${escapeHtml2(f.name)}</span>
           </div>
-        `;
-    }).join("");
+        `
+    ).join("");
   }
   populateBatchTargetDropdown() {
     if (!this.batchTargetSelect) return;
@@ -3831,34 +4380,38 @@ var OmniConvertApp = class {
       if (!query) return true;
       return f.id.includes(query) || f.name.toLowerCase().includes(query) || f.category.includes(query);
     });
-    listEl.innerHTML = filtered.map((f) => {
-      let routeLabel = "Local (On-device)";
-      let badgeClass = "local";
-      if (!f.browserSupport.canEncodeNative && !f.browserSupport.canProcessPureJs) {
-        if (f.browserSupport.canProcessWasm) {
-          routeLabel = "Local WASM Sandbox";
-          badgeClass = "wasm";
-        } else {
-          routeLabel = "Managed Server Fallback";
-          badgeClass = "server";
-        }
-      }
-      return `
+    const categoryLabels = {
+      image: "Image",
+      audio: "Audio",
+      video: "Video",
+      data: "Data",
+      document: "Document",
+      ebook: "E-Book",
+      archive: "Archive",
+      font: "Font",
+      vector: "Vector",
+      cad: "CAD"
+    };
+    listEl.innerHTML = filtered.map(
+      (f) => `
           <div class="format-row-item">
             <div>
-              <strong>${escapeHtml(f.label)}</strong> <span class="muted">(${escapeHtml(f.mimeType)})</span>
-              <div class="muted">${escapeHtml(f.name)} \u2014 ${escapeHtml(f.description)}</div>
+              <strong>${escapeHtml2(f.label)}</strong> <span class="muted">(${escapeHtml2(f.mimeType)})</span>
+              <div class="muted">${escapeHtml2(f.name)} \u2014 ${escapeHtml2(f.description)}</div>
             </div>
-            <span class="route-pill ${badgeClass}">${escapeHtml(routeLabel)}</span>
+            <span class="fmt-pill">${escapeHtml2(categoryLabels[f.category] ?? f.category)}</span>
           </div>
-        `;
-    }).join("");
+        `
+    ).join("");
   }
   updateTopCounters() {
     const el = document.getElementById("stats-counter-text");
-    if (el) {
-      el.textContent = `${this.localCompletedCount} local \xB7 ${this.serverCompletedCount} server \xB7 ${formatBytes(this.bandwidthSavedBytes)} saved`;
+    if (!el) return;
+    if (this.completedCount === 0) {
+      el.textContent = "Ready";
+      return;
     }
+    el.textContent = `${this.completedCount} converted \xB7 ${formatBytes(this.bytesProcessed)} processed`;
   }
   async ingestFiles(files) {
     for (const file of files) {
@@ -3875,7 +4428,7 @@ var OmniConvertApp = class {
       };
       const routing = this.evaluateRoute(file, headerBytes, sourceFormat, targetFormat, options);
       let thumbnailUrl;
-      if (file.type.startsWith("image/")) {
+      if (file.type.startsWith("image/") || IMAGE_EXTENSIONS.has(sourceFormat)) {
         thumbnailUrl = URL.createObjectURL(file);
       }
       this.items.push({
@@ -3890,7 +4443,7 @@ var OmniConvertApp = class {
         routing,
         status: "pending",
         progressPercent: 0,
-        stageMessage: routing.isLocal ? `Ready (Local ${routing.selectedTier})` : `Ready (Server ${routing.serverLane})`,
+        stageMessage: "Ready to convert",
         expandedSettings: false,
         thumbnailUrl
       });
@@ -3898,27 +4451,38 @@ var OmniConvertApp = class {
     this.renderQueue();
   }
   evaluateRoute(file, headerBytes, sourceFormat, targetFormat, options) {
-    try {
-      return this.router.route(
-        { name: file.name, sizeBytes: file.size, headerBytes },
-        sourceFormat,
-        targetFormat,
-        options,
-        this.device
-      );
-    } catch (err) {
-      const fallback = this.router.route(
-        { name: file.name, sizeBytes: file.size, headerBytes },
-        sourceFormat,
-        targetFormat,
-        { ...options, forceExecutionMode: "AUTO" },
-        this.device
-      );
-      fallback.warnings.push(err instanceof Error ? err.message : String(err));
-      return fallback;
+    const autoOptions = {
+      ...options,
+      forceExecutionMode: "AUTO",
+      autoDeleteServerFile: true
+    };
+    return this.router.route(
+      { name: file.name, sizeBytes: file.size, headerBytes },
+      sourceFormat,
+      targetFormat,
+      autoOptions,
+      this.device
+    );
+  }
+  resetCompletedItemForReconvert(item) {
+    if (item.status === "completed" || item.status === "cancelled" || item.status === "failed") {
+      if (item.output?.objectUrl) {
+        URL.revokeObjectURL(item.output.objectUrl);
+      }
+      item.output = void 0;
+      item.durationMs = void 0;
+      item.errorMessage = void 0;
+      item.status = "pending";
+      item.progressPercent = 0;
+      item.stageMessage = "Ready to convert";
     }
   }
   recomputeRouting(item) {
+    item.options = {
+      ...item.options,
+      forceExecutionMode: "AUTO",
+      autoDeleteServerFile: true
+    };
     item.routing = this.evaluateRoute(
       item.file,
       item.headerBytes,
@@ -3930,25 +4494,37 @@ var OmniConvertApp = class {
       item.status = "pending";
       item.progressPercent = 0;
       item.errorMessage = void 0;
-      item.stageMessage = item.routing.isLocal ? `Ready for zero-upload ${item.routing.selectedTier}` : `Ready for Server Fallback (lane: ${item.routing.serverLane})`;
+      item.stageMessage = "Ready to convert";
     }
   }
   renderQueue() {
     const hasItems = this.items.length > 0;
-    this.batchToolbar.classList.toggle("hidden", !hasItems);
-    this.tierOverview.classList.toggle("hidden", hasItems);
-    this.heroHeader.classList.toggle("compact", hasItems);
-    this.dropzone.classList.toggle("compact", hasItems);
+    this.batchToolbar?.classList.toggle("hidden", !hasItems);
+    this.tierOverview?.classList.toggle("hidden", hasItems);
+    this.heroHeader?.classList.toggle("compact", hasItems);
+    this.dropzone?.classList.toggle("compact", hasItems);
+    if (!this.queueList) return;
     if (!hasItems) {
       this.queueList.innerHTML = "";
       return;
     }
-    const localCount = this.items.filter((i) => i.routing.isLocal).length;
-    const serverCount = this.items.length - localCount;
     const completedCount = this.items.filter((i) => i.status === "completed" && i.output).length;
-    this.queueCountLabel.textContent = `${this.items.length} file${this.items.length === 1 ? "" : "s"}`;
-    this.queueRouteBreakdown.textContent = `${localCount} on-device \xB7 ${serverCount} cloud fallback`;
-    this.downloadZipBtn.classList.toggle("hidden", completedCount < 2);
+    const busyCount = this.items.filter((i) => isBusyStatus(i.status)).length;
+    if (this.queueCountLabel) {
+      this.queueCountLabel.textContent = `${this.items.length} file${this.items.length === 1 ? "" : "s"}`;
+    }
+    if (this.queueRouteBreakdown) {
+      if (completedCount === this.items.length) {
+        this.queueRouteBreakdown.textContent = `All ${completedCount} converted`;
+      } else if (busyCount > 0) {
+        this.queueRouteBreakdown.textContent = `Converting ${busyCount} \xB7 ${completedCount} done`;
+      } else if (completedCount > 0) {
+        this.queueRouteBreakdown.textContent = `${completedCount} of ${this.items.length} converted`;
+      } else {
+        this.queueRouteBreakdown.textContent = "Ready to convert";
+      }
+    }
+    this.downloadZipBtn?.classList.toggle("hidden", completedCount < 2);
     this.queueList.innerHTML = this.items.map((item) => this.renderJobCard(item)).join("");
     this.attachCardListeners();
   }
@@ -3974,49 +4550,51 @@ var OmniConvertApp = class {
     };
     return Array.from(byCategory.entries()).map(([cat, fmts]) => {
       const opts = fmts.map(
-        (f) => `<option value="${escapeHtml(f.id)}" ${f.id === selectedTarget ? "selected" : ""}>${escapeHtml(f.label)} \u2014 ${escapeHtml(f.name)}</option>`
+        (f) => `<option value="${escapeHtml2(f.id)}" ${f.id === selectedTarget ? "selected" : ""}>${escapeHtml2(f.label)} \u2014 ${escapeHtml2(f.name)}</option>`
       ).join("");
-      return `<optgroup label="${escapeHtml(categoryLabels[cat] ?? cat)}">${opts}</optgroup>`;
+      return `<optgroup label="${escapeHtml2(categoryLabels[cat] ?? cat)}">${opts}</optgroup>`;
     }).join("");
   }
   renderContextualOptions(item) {
     const srcCat = getFormatById(item.sourceFormat)?.category;
     const tgt = item.targetFormat;
     const parts = [];
-    if (["png", "jpg", "webp", "avif", "bmp", "ico"].includes(tgt) || srcCat === "image") {
+    if (["png", "jpg", "webp", "avif", "bmp", "ico"].includes(tgt) || srcCat === "image" && tgt !== "pdf") {
       if (["jpg", "webp", "avif"].includes(tgt)) {
         parts.push(`
           <label class="opt-field">
-            Quality: <strong>${item.options.quality ?? 85}%</strong>
-            <input type="range" min="15" max="100" value="${item.options.quality ?? 85}" data-opt="quality" data-id="${item.id}" />
+            <span>Quality: <strong data-quality-label="${item.id}">${item.options.quality ?? 85}%</strong></span>
+            <input type="range" min="10" max="100" value="${item.options.quality ?? 85}" data-opt="quality" data-id="${item.id}" />
           </label>
         `);
       }
       parts.push(`
         <label class="opt-field">
-          W: <input type="number" placeholder="auto" min="16" max="8192" value="${item.options.width ?? ""}" data-opt="width" data-id="${item.id}" />
+          <span>Width (px)</span>
+          <input type="number" placeholder="Auto" min="16" max="8192" value="${item.options.width ?? ""}" data-opt="width" data-id="${item.id}" />
         </label>
         <label class="opt-field">
-          H: <input type="number" placeholder="auto" min="16" max="8192" value="${item.options.height ?? ""}" data-opt="height" data-id="${item.id}" />
+          <span>Height (px)</span>
+          <input type="number" placeholder="Auto" min="16" max="8192" value="${item.options.height ?? ""}" data-opt="height" data-id="${item.id}" />
         </label>
         <label class="opt-field">
           <input type="checkbox" ${item.options.stripMetadata !== false ? "checked" : ""} data-opt="stripMetadata" data-id="${item.id}" />
-          Strip EXIF
+          <span>Strip EXIF metadata</span>
         </label>
       `);
-    } else if (srcCat === "audio" || tgt === "wav") {
+    } else if (srcCat === "audio" || tgt === "wav" || tgt === "mp3" || tgt === "ogg" || tgt === "flac" || tgt === "aac") {
       parts.push(`
         <label class="opt-field">
-          Hz:
+          <span>Sample Rate</span>
           <select data-opt="sampleRate" data-id="${item.id}">
             <option value="" ${!item.options.sampleRate ? "selected" : ""}>Original</option>
-            <option value="48000" ${item.options.sampleRate === 48e3 ? "selected" : ""}>48,000 Hz</option>
-            <option value="44100" ${item.options.sampleRate === 44100 ? "selected" : ""}>44,100 Hz</option>
-            <option value="16000" ${item.options.sampleRate === 16e3 ? "selected" : ""}>16,000 Hz</option>
+            <option value="44100" ${item.options.sampleRate === 44100 ? "selected" : ""}>44.1 kHz</option>
+            <option value="48000" ${item.options.sampleRate === 48e3 ? "selected" : ""}>48 kHz</option>
+            <option value="16000" ${item.options.sampleRate === 16e3 ? "selected" : ""}>16 kHz Voice</option>
           </select>
         </label>
         <label class="opt-field">
-          Ch:
+          <span>Channels</span>
           <select data-opt="channels" data-id="${item.id}">
             <option value="" ${!item.options.channels ? "selected" : ""}>Auto</option>
             <option value="2" ${item.options.channels === 2 ? "selected" : ""}>Stereo</option>
@@ -4025,150 +4603,135 @@ var OmniConvertApp = class {
         </label>
         <label class="opt-field">
           <input type="checkbox" ${item.options.normalizeAudio ? "checked" : ""} data-opt="normalizeAudio" data-id="${item.id}" />
-          Normalize (-1 dB)
+          <span>Normalize (-1 dB)</span>
         </label>
       `);
-    } else if (srcCat === "data") {
-      parts.push(`
-        <label class="opt-field">
-          Indent:
-          <select data-opt="indentSpaces" data-id="${item.id}">
-            <option value="2" ${(item.options.indentSpaces ?? 2) === 2 ? "selected" : ""}>2 spaces</option>
-            <option value="4" ${item.options.indentSpaces === 4 ? "selected" : ""}>4 spaces</option>
-            <option value="0" ${item.options.indentSpaces === 0 ? "selected" : ""}>Minified</option>
-          </select>
-        </label>
-      `);
+    } else if (srcCat === "data" || TEXT_TARGET_IDS.has(tgt)) {
+      if (["json", "xml", "yaml", "toml", "html"].includes(tgt) || srcCat === "data") {
+        parts.push(`
+          <label class="opt-field">
+            <span>Indentation</span>
+            <select data-opt="indentSpaces" data-id="${item.id}">
+              <option value="2" ${(item.options.indentSpaces ?? 2) === 2 ? "selected" : ""}>2 spaces</option>
+              <option value="4" ${item.options.indentSpaces === 4 ? "selected" : ""}>4 spaces</option>
+              <option value="0" ${item.options.indentSpaces === 0 ? "selected" : ""}>Minified</option>
+            </select>
+          </label>
+        `);
+      }
+      if (item.sourceFormat === "csv" || tgt === "csv") {
+        parts.push(`
+          <label class="opt-field">
+            <span>CSV Delimiter</span>
+            <select data-opt="csvDelimiter" data-id="${item.id}">
+              <option value="," ${(item.options.csvDelimiter ?? ",") === "," ? "selected" : ""}>Comma (,)</option>
+              <option value=";" ${item.options.csvDelimiter === ";" ? "selected" : ""}>Semicolon (;)</option>
+              <option value="&#9;" ${item.options.csvDelimiter === "	" ? "selected" : ""}>Tab (\\t)</option>
+              <option value="|" ${item.options.csvDelimiter === "|" ? "selected" : ""}>Pipe (|)</option>
+            </select>
+          </label>
+        `);
+      }
       if (tgt === "sql") {
         parts.push(`
           <label class="opt-field">
-            Table: <input type="text" value="${escapeHtml(item.options.sqlTableName ?? "records")}" data-opt="sqlTableName" data-id="${item.id}" style="width:110px" />
+            <span>SQL Table</span>
+            <input type="text" value="${escapeHtml2(item.options.sqlTableName ?? "records")}" data-opt="sqlTableName" data-id="${item.id}" style="width:120px" />
           </label>
         `);
       }
     }
-    if (tgt === "pdf") {
+    if (tgt === "pdf" || srcCat === "document") {
       parts.push(`
         <label class="opt-field">
-          Page:
+          <span>Page Size</span>
           <select data-opt="pageSize" data-id="${item.id}">
             <option value="A4" ${(item.options.pageSize ?? "A4") === "A4" ? "selected" : ""}>A4</option>
             <option value="Letter" ${item.options.pageSize === "Letter" ? "selected" : ""}>Letter</option>
-            <option value="Legal" ${item.options.pageSize === "Legal" ? "selected" : ""}>Legal</option>
           </select>
         </label>
       `);
     }
-    if (!item.routing.isLocal) {
-      parts.push(`
-        <label class="opt-field">
-          <input type="checkbox" ${item.options.autoDeleteServerFile !== false ? "checked" : ""} data-opt="autoDeleteServerFile" data-id="${item.id}" />
-          Delete from server after download
-        </label>
-      `);
-    }
-    return parts.length > 0 ? `<div class="options-panel">${parts.join("")}</div>` : "";
+    return parts.length > 0 ? `<div class="settings-row">${parts.join("")}</div>` : `<div class="muted">No additional options for ${escapeHtml2(tgt.toUpperCase())}.</div>`;
   }
   renderJobCard(item) {
     const srcDef = getFormatById(item.sourceFormat);
     const category = srcDef?.category ?? "document";
     const presets = getPresetsForCategory(category);
-    const badge = tierBadgeMeta(item.routing);
-    const isBusy = item.status === "processing-local" || item.status === "queued-local" || item.status === "uploading-server" || item.status === "queued-server" || item.status === "processing-server";
-    const mode = item.options.forceExecutionMode ?? "AUTO";
+    const compatibleFormats = getCompatibleTargets(item.sourceFormat);
+    const badge = statusBadgeMeta(item);
+    const isBusy = isBusyStatus(item.status);
     let deltaBadge = "";
     if (item.status === "completed" && item.output) {
-      const pct = (item.output.bytes.length - item.file.size) / Math.max(1, item.file.size) * 100;
-      const pctStr = pct <= 0 ? `${Math.round(pct)}%` : `+${Math.round(pct)}%`;
+      const { pct, pctStr } = computeSizeDelta(item.file.size, item.output.bytes.length);
       const timing = item.durationMs !== void 0 ? ` \xB7 ${item.durationMs}ms` : "";
-      deltaBadge = `<span class="delta-text ${pct > 0 ? "larger" : ""}">${formatBytes(item.output.bytes.length)} (${pctStr}${timing})</span>`;
+      deltaBadge = `<span class="delta-text ${pct > 0 ? "larger" : ""}">${formatBytes(item.output.bytes.length)} (${pctStr})${timing}</span>`;
     }
     const fileIconSvg = item.thumbnailUrl ? `<img src="${item.thumbnailUrl}" alt="" />` : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>`;
     return `
       <article class="job-card status-${item.status}" data-job-id="${item.id}">
-        <!-- Hairline Progress Line -->
         <div class="progress-line-track">
-          <div class="progress-line-fill ${item.routing.isLocal ? "" : "server"}" style="width: ${item.progressPercent}%"></div>
+          <div class="progress-line-fill" style="width: ${item.progressPercent}%"></div>
         </div>
-
-        <!-- Main Clean Single Row -->
         <div class="job-main-row">
           <div class="job-file-col">
             <div class="file-thumb" aria-hidden="true">${fileIconSvg}</div>
             <div class="file-meta-col">
-              <span class="file-name" title="${escapeHtml(item.file.name)}">${escapeHtml(item.file.name)}</span>
+              <span class="file-name" title="${escapeHtml2(item.file.name)}">${escapeHtml2(item.file.name)}</span>
               <div class="file-subline">
                 <span>${formatBytes(item.file.size)}</span>
-                <span class="fmt-pill ${item.magic.isSpoofedOrMismatched ? "spoof" : ""}">${escapeHtml(item.sourceFormat)}</span>
+                <span class="fmt-pill ${item.magic.isSpoofedOrMismatched ? "spoof" : ""}">${escapeHtml2(item.sourceFormat)}</span>
               </div>
             </div>
           </div>
-
           <div class="job-convert-col">
             <span class="arrow-muted" aria-hidden="true">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </span>
-            <select class="target-select" data-action="target" data-id="${item.id}" ${isBusy ? "disabled" : ""}>
-              ${this.renderTargetSelectOptions(item.sourceFormat, item.targetFormat)}
-            </select>
+            ${createFormatPickerTriggerHtml(item.id, item.targetFormat, compatibleFormats)}
             ${presets.length > 0 ? `
               <select class="preset-select" data-action="preset" data-id="${item.id}" ${isBusy ? "disabled" : ""}>
                 <option value="">Preset...</option>
-                ${presets.map((p) => `<option value="${escapeHtml(p.id)}" ${item.presetId === p.id ? "selected" : ""}>${escapeHtml(p.name)}</option>`).join("")}
+                ${presets.map((p) => `<option value="${escapeHtml2(p.id)}" ${item.presetId === p.id ? "selected" : ""}>${escapeHtml2(p.name)}</option>`).join("")}
               </select>` : ""}
-            <button type="button" class="settings-toggle-btn ${item.expandedSettings ? "active" : ""}" data-action="toggle-settings" data-id="${item.id}" title="Toggle format options & route details">
+            <button type="button" class="settings-toggle-btn ${item.expandedSettings ? "active" : ""}" data-action="toggle-settings" data-id="${item.id}" title="Conversion settings">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
           </div>
-
           <div class="job-actions-col">
-            <span class="route-pill ${badge.tierClass}" title="${escapeHtml(item.routing.reason)}">
-              <span>${badge.icon}</span> ${escapeHtml(badge.label)}
+            <span class="route-pill ${badge.pillClass}" data-status-pill style="${badge.inlineStyle}">
+              ${escapeHtml2(badge.label)}
             </span>
-
             ${deltaBadge}
-
             ${isBusy ? `<button type="button" class="btn btn-xs btn-danger" data-action="cancel" data-id="${item.id}">Cancel</button>` : item.status === "completed" && item.output ? `
                     <button type="button" class="btn btn-xs btn-ghost" data-action="preview" data-id="${item.id}">Preview</button>
-                    <a class="btn btn-xs btn-success" href="${item.output.objectUrl}" download="${escapeHtml(item.output.filename)}">Download</a>
+                    <a class="btn btn-xs btn-success" href="${item.output.objectUrl}" download="${escapeHtml2(item.output.filename)}">Download</a>
                   ` : `<button type="button" class="btn btn-xs btn-primary" data-action="convert" data-id="${item.id}">Convert</button>`}
             <button type="button" class="icon-btn" data-action="remove" data-id="${item.id}" title="Remove file" style="width:28px;height:28px">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
         </div>
-
-        <!-- Collapsible Drawer -->
-        ${item.expandedSettings ? `
-          <div class="job-settings-drawer">
-            <div class="engine-meta-line">
-              <span>Engine: <code>${escapeHtml(item.routing.selectedEngine)}</code></span>
-              <span>Memory Est: <code>~${item.routing.estimatedPeakMemoryMB.toFixed(1)} MB</code></span>
-              <span>${escapeHtml(item.routing.reason)}</span>
-            </div>
-
-            <div class="settings-row">
-              <div class="mode-segmented">
-                <button type="button" class="${mode === "AUTO" ? "active" : ""}" data-action="mode" data-mode="AUTO" data-id="${item.id}">Auto Hybrid</button>
-                <button type="button" class="${mode === "LOCAL_ONLY" ? "active" : ""}" data-action="mode" data-mode="LOCAL_ONLY" data-id="${item.id}">Force Local</button>
-                <button type="button" class="${mode === "SERVER_ONLY" ? "active" : ""}" data-action="mode" data-mode="SERVER_ONLY" data-id="${item.id}">Force Server</button>
-              </div>
-
-              ${this.renderContextualOptions(item)}
-            </div>
-          </div>` : ""}
-
-        ${item.routing.warnings.length > 0 ? `<div class="inline-alert warn">${item.routing.warnings.map(escapeHtml).join("<br/>")}</div>` : ""}
-        ${item.errorMessage ? `<div class="inline-alert error">${escapeHtml(item.errorMessage)}</div>` : ""}
-
+        ${item.expandedSettings ? `<div class="job-settings-drawer">${this.renderContextualOptions(item)}</div>` : ""}
+        ${item.errorMessage ? `<div class="inline-alert error">${escapeHtml2(item.errorMessage)}</div>` : ""}
         <div class="job-progress-bar">
-          <span>${escapeHtml(item.stageMessage)}</span>
+          <span>${escapeHtml2(item.stageMessage)}</span>
           <span>${Math.round(item.progressPercent)}%</span>
         </div>
       </article>
     `;
   }
   attachCardListeners() {
+    if (!this.queueList) return;
+    attachFormatPickerListeners(this.queueList, (itemId, targetFormatId) => {
+      const item = this.items.find((i) => i.id === itemId);
+      if (!item) return;
+      item.targetFormat = targetFormatId;
+      item.presetId = "";
+      this.resetCompletedItemForReconvert(item);
+      this.recomputeRouting(item);
+      this.renderQueue();
+    });
     this.queueList.querySelectorAll('button[data-action="toggle-settings"]').forEach((btn) => {
       btn.addEventListener("click", () => {
         const item = this.items.find((i) => i.id === btn.dataset.id);
@@ -4183,6 +4746,7 @@ var OmniConvertApp = class {
         if (!item) return;
         item.targetFormat = el.value;
         item.presetId = "";
+        this.resetCompletedItemForReconvert(item);
         this.recomputeRouting(item);
         this.renderQueue();
       });
@@ -4198,24 +4762,23 @@ var OmniConvertApp = class {
           item.targetFormat = preset.targetFormat;
           item.options = {
             ...preset.options,
-            forceExecutionMode: item.options.forceExecutionMode,
-            autoDeleteServerFile: item.options.autoDeleteServerFile
+            forceExecutionMode: "AUTO",
+            autoDeleteServerFile: true
           };
         }
+        this.resetCompletedItemForReconvert(item);
         this.recomputeRouting(item);
         this.renderQueue();
       });
     });
-    this.queueList.querySelectorAll('button[data-action="mode"]').forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const item = this.items.find((i) => i.id === btn.dataset.id);
+    this.queueList.querySelectorAll('input[type="range"][data-opt="quality"]').forEach((el) => {
+      el.addEventListener("input", () => {
+        const item = this.items.find((i) => i.id === el.dataset.id);
         if (!item) return;
-        item.options = {
-          ...item.options,
-          forceExecutionMode: btn.dataset.mode
-        };
-        this.recomputeRouting(item);
-        this.renderQueue();
+        const q = Number(el.value);
+        item.options.quality = q;
+        const label = this.queueList?.querySelector(`[data-quality-label="${item.id}"]`);
+        if (label) label.textContent = `${q}%`;
       });
     });
     this.queueList.querySelectorAll("[data-opt]").forEach((el) => {
@@ -4233,6 +4796,7 @@ var OmniConvertApp = class {
         } else if (el instanceof HTMLInputElement) {
           item.options[key] = el.value;
         }
+        this.resetCompletedItemForReconvert(item);
         this.renderQueue();
       });
     });
@@ -4261,6 +4825,7 @@ var OmniConvertApp = class {
         const item = this.items.find((i) => i.id === btn.dataset.id);
         if (item?.abortController) item.abortController.abort();
         if (item?.output?.objectUrl) URL.revokeObjectURL(item.output.objectUrl);
+        if (item?.thumbnailUrl) URL.revokeObjectURL(item.thumbnailUrl);
         this.items = this.items.filter((i) => i.id !== btn.dataset.id);
         this.renderQueue();
       });
@@ -4275,6 +4840,11 @@ var OmniConvertApp = class {
       URL.revokeObjectURL(item.output.objectUrl);
       item.output = void 0;
     }
+    item.options = {
+      ...item.options,
+      forceExecutionMode: "AUTO",
+      autoDeleteServerFile: true
+    };
     item.errorMessage = void 0;
     item.abortController = new AbortController();
     const signal = item.abortController.signal;
@@ -4283,7 +4853,7 @@ var OmniConvertApp = class {
       if (item.routing.isLocal) {
         item.status = "queued-local";
         item.progressPercent = 5;
-        item.stageMessage = "Waiting for local worker slot...";
+        item.stageMessage = "Waiting in queue...";
         this.renderQueue();
         try {
           const result = await this.workerPool.enqueue({
@@ -4294,7 +4864,7 @@ var OmniConvertApp = class {
             onProgress: (pct, msg) => {
               item.status = "processing-local";
               item.progressPercent = pct;
-              item.stageMessage = msg;
+              item.stageMessage = sanitizeStageMessage("processing-local", msg);
               this.updateCardProgressOnly(item);
             },
             executor: async (ctx) => {
@@ -4318,14 +4888,15 @@ var OmniConvertApp = class {
             bytes: result.bytes,
             filename: result.filename,
             mimeType: result.mimeType,
-            objectUrl: objectUrl2
+            objectUrl: objectUrl2,
+            metadata: result.metadata
           };
           item.status = "completed";
           item.progressPercent = 100;
           item.durationMs = Math.round(performance.now() - startedAt);
-          item.stageMessage = `Completed locally in ${item.durationMs}ms (0 KB uploaded)`;
-          this.localCompletedCount += 1;
-          this.bandwidthSavedBytes += item.file.size;
+          item.stageMessage = `Converted in ${item.durationMs}ms`;
+          this.completedCount += 1;
+          this.bytesProcessed += item.file.size;
           this.updateTopCounters();
           this.renderQueue();
           return;
@@ -4333,7 +4904,7 @@ var OmniConvertApp = class {
           if (localErr instanceof DOMException && localErr.name === "AbortError") {
             throw localErr;
           }
-          const canEscalate = item.options.forceExecutionMode !== "LOCAL_ONLY" && (item.routing.fallbackTier === "SERVER_FALLBACK" || localErr instanceof WasmLoaderError);
+          const canEscalate = item.routing.fallbackTier === "SERVER_FALLBACK" || localErr instanceof WasmLoaderError;
           if (!canEscalate) {
             throw localErr;
           }
@@ -4343,7 +4914,7 @@ var OmniConvertApp = class {
       }
       item.status = "uploading-server";
       item.progressPercent = 10;
-      item.stageMessage = `Uploading to Server Fallback (lane: ${item.routing.serverLane})...`;
+      item.stageMessage = "Preparing conversion...";
       this.renderQueue();
       const serverRes = await this.serverClient.submitAndMonitorJob({
         file: item.file,
@@ -4355,7 +4926,7 @@ var OmniConvertApp = class {
         onProgress: (upd) => {
           item.status = upd.status;
           item.progressPercent = upd.progressPercent;
-          item.stageMessage = upd.stageMessage;
+          item.stageMessage = sanitizeStageMessage(upd.status, upd.stageMessage);
           this.updateCardProgressOnly(item);
         }
       });
@@ -4370,16 +4941,16 @@ var OmniConvertApp = class {
       item.status = "completed";
       item.progressPercent = 100;
       item.durationMs = Math.round(performance.now() - startedAt);
-      item.stageMessage = `Completed on server (${item.routing.serverLane} lane) in ${item.durationMs}ms`;
-      this.serverCompletedCount += 1;
+      item.stageMessage = `Converted in ${item.durationMs}ms`;
+      this.completedCount += 1;
+      this.bytesProcessed += item.file.size;
       this.updateTopCounters();
       this.renderQueue();
-      void this.refreshServerHealth();
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
         item.status = "cancelled";
         item.progressPercent = 0;
-        item.stageMessage = "Cancelled by user";
+        item.stageMessage = "Cancelled";
       } else {
         item.status = "failed";
         item.errorMessage = err instanceof Error ? err.message : String(err);
@@ -4389,11 +4960,15 @@ var OmniConvertApp = class {
     }
   }
   updateCardProgressOnly(item) {
-    const card = this.queueList.querySelector(`[data-job-id="${item.id}"]`);
+    const card = this.queueList?.querySelector(`[data-job-id="${item.id}"]`);
     if (!card) return;
     const fill = card.querySelector(".progress-line-fill");
+    const pill = card.querySelector("[data-status-pill]");
     const barSpans = card.querySelectorAll(".job-progress-bar span");
     if (fill) fill.style.width = `${item.progressPercent}%`;
+    if (pill && isBusyStatus(item.status)) {
+      pill.textContent = `Converting... ${Math.round(item.progressPercent)}%`;
+    }
     if (barSpans[0]) barSpans[0].textContent = item.stageMessage;
     if (barSpans[1]) barSpans[1].textContent = `${Math.round(item.progressPercent)}%`;
   }
@@ -4414,114 +4989,173 @@ var OmniConvertApp = class {
     setTimeout(() => URL.revokeObjectURL(url), 5e3);
   }
   async openPreview(item) {
-    if (!item.output) return;
-    this.previewTitle.textContent = `Preview \u2014 ${item.output.filename} (${formatBytes(item.output.bytes.length)})`;
-    const mime = item.output.mimeType;
-    if (mime.startsWith("image/")) {
-      this.previewBody.innerHTML = `<img src="${item.output.objectUrl}" alt="${escapeHtml(item.output.filename)}" />`;
-    } else if (mime.startsWith("audio/")) {
-      this.previewBody.innerHTML = `<audio controls src="${item.output.objectUrl}" style="width:100%"></audio>`;
-    } else if (mime === "application/pdf") {
-      this.previewBody.innerHTML = `<iframe src="${item.output.objectUrl}" title="PDF Preview"></iframe>`;
-    } else if (mime.startsWith("text/") || mime.includes("json") || mime.includes("xml") || mime.includes("yaml") || mime.includes("sql") || mime.includes("toml")) {
-      const text = await item.output.blob.text();
-      this.previewBody.innerHTML = `<pre>${escapeHtml(text.slice(0, 25e3))}</pre>`;
-    } else {
-      this.previewBody.innerHTML = `<p class="muted">Binary artifact (${escapeHtml(mime)}, ${formatBytes(item.output.bytes.length)}). Use Download to save.</p>`;
+    if (!item.output || !this.previewBody || !this.previewBackdrop || !this.previewTitle) return;
+    for (const url of this.tempPreviewUrls) {
+      URL.revokeObjectURL(url);
     }
-    this.previewBackdrop.classList.remove("hidden");
-  }
-  async refreshServerHealth() {
-    const health = await this.serverClient.getHealth();
-    this.serverHealth = health;
-    const dot = document.getElementById("server-health-dot");
-    const text = document.getElementById("server-health-text");
-    if (!health) {
-      dot.className = "status-indicator dot-rose";
-      text.textContent = "Offline";
-    } else if (health.status === "ok") {
-      dot.className = "status-indicator dot-emerald";
-      text.textContent = "Engine";
-    } else {
-      dot.className = "status-indicator dot-amber";
-      text.textContent = health.status;
-    }
-    this.renderServerTelemetry();
-  }
-  renderWorkerTelemetry(stats) {
-    const metricsEl = document.getElementById("client-worker-metrics");
-    const slotsEl = document.getElementById("worker-slots-list");
-    if (!metricsEl || !slotsEl) return;
-    metricsEl.innerHTML = `
-      <div class="kv-item">
-        <span class="kv-label">Active / Pool</span>
-        <strong class="kv-val">${stats.activeCount} / ${stats.maxWorkers}</strong>
-      </div>
-      <div class="kv-item">
-        <span class="kv-label">Queued</span>
-        <strong class="kv-val">${stats.queuedCount}</strong>
-      </div>
-      <div class="kv-item">
-        <span class="kv-label">Processed</span>
-        <strong class="kv-val">${stats.totalJobsProcessed}</strong>
+    this.tempPreviewUrls = [];
+    const out = item.output;
+    const mime = out.mimeType;
+    const { pctStr, savingsLabel, isSmaller } = computeSizeDelta(item.file.size, out.bytes.length);
+    const timingLabel = item.durationMs !== void 0 ? ` \xB7 ${item.durationMs}ms` : "";
+    this.previewTitle.textContent = `${out.filename} \u2014 Studio Inspector`;
+    const summaryBarHtml = `
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;background:var(--surface-muted);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:16px;">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:0.82rem;">
+          <span class="fmt-pill">${escapeHtml2(item.sourceFormat.toUpperCase())}</span>
+          <span style="color:var(--text-muted);">\u2192</span>
+          <span class="fmt-pill">${escapeHtml2(item.targetFormat.toUpperCase())}</span>
+          <span style="color:var(--text-secondary);font-variant-numeric:tabular-nums;">${formatBytes(item.file.size)} \u2192 <strong>${formatBytes(out.bytes.length)}</strong></span>
+          <span class="route-pill ${isSmaller ? "local" : ""}" style="cursor:default;${isSmaller ? "" : "background:var(--surface);color:var(--text-secondary);border:1px solid var(--border);"}">${escapeHtml2(savingsLabel)} (${escapeHtml2(pctStr)})${escapeHtml2(timingLabel)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;" id="preview-toolbar-actions">
+          <a class="btn btn-sm btn-success" href="${out.objectUrl}" download="${escapeHtml2(out.filename)}">Download ${escapeHtml2(item.targetFormat.toUpperCase())}</a>
+        </div>
       </div>
     `;
-    slotsEl.innerHTML = stats.slots.map(
-      (s) => `
-      <div class="slot-row">
-        <span>Worker #${s.slotId} (${s.busy ? "BUSY" : "IDLE"})</span>
-        <span>${s.jobsRun} jobs \xB7 ${formatBytes(s.cumulativeBytes)}</span>
-      </div>`
-    ).join("");
-    void getSharedWasmLoader().getAllStatuses().then((statuses) => {
-      const wasmInfo = statuses.map((w) => `${w.id}: ${w.cached ? "Cached" : "Lazy CDN"} (${w.sizeMB} MB)`).join(" \xB7 ");
-      slotsEl.insertAdjacentHTML(
-        "beforeend",
-        `<div class="muted" style="margin-top:6px">WASM Modules: ${escapeHtml(wasmInfo)}</div>`
+    if (mime.startsWith("image/")) {
+      let origUrl = item.thumbnailUrl;
+      if (!origUrl) {
+        origUrl = URL.createObjectURL(item.file);
+        this.tempPreviewUrls.push(origUrl);
+      }
+      const checkerBg = "background-color:var(--surface-muted);background-image:linear-gradient(45deg,rgba(128,128,128,0.08) 25%,transparent 25%),linear-gradient(-45deg,rgba(128,128,128,0.08) 25%,transparent 25%),linear-gradient(45deg,transparent 75%,rgba(128,128,128,0.08) 75%),linear-gradient(-45deg,transparent 75%,rgba(128,128,128,0.08) 75%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0;";
+      this.previewBody.innerHTML = `
+        ${summaryBarHtml}
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;">
+          <div style="border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;background:var(--surface);">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;border-bottom:1px solid var(--border);background:var(--surface-hover);font-size:0.78rem;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <strong>Original</strong>
+                <span class="fmt-pill">${escapeHtml2(item.sourceFormat.toUpperCase())}</span>
+              </div>
+              <span style="color:var(--text-muted);font-family:var(--font-mono);font-size:0.74rem;">
+                <span id="preview-orig-dims">\u2014</span> \xB7 ${formatBytes(item.file.size)}
+              </span>
+            </div>
+            <div style="padding:14px;display:flex;align-items:center;justify-content:center;min-height:220px;${checkerBg}">
+              <img src="${origUrl}" alt="Original ${escapeHtml2(item.file.name)}" style="max-width:100%;max-height:46vh;object-fit:contain;border:none;border-radius:4px;" />
+            </div>
+          </div>
+          <div style="border:1px solid var(--accent-local-border);border-radius:var(--radius-md);overflow:hidden;background:var(--surface);">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;border-bottom:1px solid var(--border);background:var(--accent-local-bg);font-size:0.78rem;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <strong style="color:var(--accent-local);">Converted</strong>
+                <span class="fmt-pill">${escapeHtml2(item.targetFormat.toUpperCase())}</span>
+              </div>
+              <span style="color:var(--text-secondary);font-family:var(--font-mono);font-size:0.74rem;">
+                <span id="preview-out-dims">${out.metadata?.width && out.metadata?.height ? `${out.metadata.width} \xD7 ${out.metadata.height}` : "\u2014"}</span> \xB7 ${formatBytes(out.bytes.length)}
+              </span>
+            </div>
+            <div style="padding:14px;display:flex;align-items:center;justify-content:center;min-height:220px;${checkerBg}">
+              <img src="${out.objectUrl}" alt="Converted ${escapeHtml2(out.filename)}" style="max-width:100%;max-height:46vh;object-fit:contain;border:none;border-radius:4px;" />
+            </div>
+          </div>
+        </div>
+      `;
+      this.previewBackdrop.classList.remove("hidden");
+      void Promise.all([loadImageDimensions(origUrl), loadImageDimensions(out.objectUrl)]).then(
+        ([origDims, outDims]) => {
+          const origEl = document.getElementById("preview-orig-dims");
+          const outEl = document.getElementById("preview-out-dims");
+          if (origEl && origDims) origEl.textContent = `${origDims.width} \xD7 ${origDims.height}`;
+          if (outEl && outDims) outEl.textContent = `${outDims.width} \xD7 ${outDims.height}`;
+        }
       );
-    });
-  }
-  renderServerTelemetry() {
-    const lanesEl = document.getElementById("server-lanes-grid");
-    const storageEl = document.getElementById("server-storage-panel");
-    const binariesEl = document.getElementById("server-binaries-grid");
-    if (!this.serverHealth) {
-      lanesEl.innerHTML = `<div class="muted">Server fallback endpoint (/api/v1/health) unreachable. Local Tier 1 &amp; Tier 2 engines operate 100% offline.</div>`;
-      storageEl.innerHTML = `<div class="muted">No server scratch telemetry available.</div>`;
-      binariesEl.innerHTML = "";
       return;
     }
-    const h = this.serverHealth;
-    const lanes = ["fast", "document", "media"];
-    lanesEl.innerHTML = lanes.map(
-      (lane) => `
-      <div class="kv-item">
-        <span class="kv-label">lane:${lane}</span>
-        <strong class="kv-val">${h.activeJobsByLane[lane] ?? 0} / ${h.laneConcurrencyLimits[lane] ?? "-"}</strong>
-      </div>`
-    ).join("");
-    const st = h.storage;
-    const pct = Math.min(100, Math.max(0, st.usagePercent));
-    storageEl.innerHTML = `
-      <div class="progress-line-track">
-        <div class="progress-line-fill server" style="width:${pct}%"></div>
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-top:6px">
-        <span>Used: <strong>${formatBytes(st.usedBytes)}</strong> / ${formatBytes(st.maxQuotaBytes)} (${pct.toFixed(1)}%)</span>
-        <span>TTL: <strong>${st.ttlMinutes} min</strong></span>
-      </div>
-      <div class="muted">
-        Active sandboxes: ${st.activeJobDirs} \xB7 Purged: ${st.totalPurgedDirs} \xB7 Completed: ${h.totalCompletedJobs}
+    if (mime.startsWith("audio/")) {
+      const sampleRateVal = out.metadata?.sampleRate ? `${(Number(out.metadata.sampleRate) / 1e3).toFixed(1).replace(/\.0$/, "")} kHz` : item.options.sampleRate ? `${(item.options.sampleRate / 1e3).toFixed(1).replace(/\.0$/, "")} kHz` : "Original";
+      const channelsVal = out.metadata?.channels === 1 || item.options.channels === 1 ? "Mono (1 ch)" : out.metadata?.channels === 2 || item.options.channels === 2 ? "Stereo (2 ch)" : "Auto";
+      const durationVal = out.metadata?.durationSec !== void 0 ? `${out.metadata.durationSec}s` : "\u2014";
+      this.previewBody.innerHTML = `
+        ${summaryBarHtml}
+        <div style="border:1px solid var(--border);border-radius:var(--radius-md);padding:18px;background:var(--surface);display:flex;flex-direction:column;gap:16px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;">
+            <div class="kv-item">
+              <span class="kv-label">Format</span>
+              <strong class="kv-val">${escapeHtml2(item.targetFormat.toUpperCase())} (${escapeHtml2(mime)})</strong>
+            </div>
+            <div class="kv-item">
+              <span class="kv-label">Sample Rate</span>
+              <strong class="kv-val">${escapeHtml2(sampleRateVal)}</strong>
+            </div>
+            <div class="kv-item">
+              <span class="kv-label">Channels</span>
+              <strong class="kv-val">${escapeHtml2(channelsVal)}</strong>
+            </div>
+            <div class="kv-item">
+              <span class="kv-label">Duration</span>
+              <strong class="kv-val" id="preview-audio-duration">${escapeHtml2(durationVal)}</strong>
+            </div>
+          </div>
+          <div style="padding:14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-muted);">
+            <div style="font-size:0.76rem;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">
+              Converted Output \u2014 ${escapeHtml2(out.filename)}
+            </div>
+            <audio id="preview-audio-player" controls src="${out.objectUrl}" style="width:100%"></audio>
+          </div>
+        </div>
+      `;
+      const audioEl = document.getElementById("preview-audio-player");
+      audioEl?.addEventListener("loadedmetadata", () => {
+        const durEl = document.getElementById("preview-audio-duration");
+        if (durEl && Number.isFinite(audioEl.duration)) {
+          durEl.textContent = `${audioEl.duration.toFixed(2)}s`;
+        }
+      });
+      this.previewBackdrop.classList.remove("hidden");
+      return;
+    }
+    if (mime === "application/pdf") {
+      this.previewBody.innerHTML = `
+        ${summaryBarHtml}
+        <iframe src="${out.objectUrl}" title="PDF Preview" style="width:100%;height:62vh;border:1px solid var(--border);border-radius:var(--radius-md);background:#fff;"></iframe>
+      `;
+      this.previewBackdrop.classList.remove("hidden");
+      return;
+    }
+    const isTextLike = mime.startsWith("text/") || mime.includes("json") || mime.includes("xml") || mime.includes("yaml") || mime.includes("sql") || mime.includes("toml") || mime.includes("csv") || TEXT_TARGET_IDS.has(item.targetFormat);
+    if (isTextLike) {
+      const fullText = await out.blob.text();
+      const lineCount = fullText === "" ? 0 : fullText.split(/\r\n|\r|\n/).length;
+      const maxPreviewChars = 5e4;
+      const isTruncated = fullText.length > maxPreviewChars;
+      const displayText = isTruncated ? fullText.slice(0, maxPreviewChars) : fullText;
+      const rowStat = out.metadata?.rows !== void 0 ? ` \xB7 ${Number(out.metadata.rows).toLocaleString()} rows` : "";
+      this.previewBody.innerHTML = `
+        ${summaryBarHtml}
+        <div style="border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;background:var(--surface);">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface-hover);">
+            <span style="font-size:0.78rem;color:var(--text-secondary);font-family:var(--font-mono);">
+              ${lineCount.toLocaleString()} lines \xB7 ${fullText.length.toLocaleString()} chars \xB7 ${formatBytes(out.bytes.length)}${escapeHtml2(rowStat)}
+            </span>
+            <button type="button" class="btn btn-xs btn-secondary" id="copy-preview-btn">Copy to clipboard</button>
+          </div>
+          <pre style="margin:0;border:none;border-radius:0;max-height:54vh;overflow:auto;"><code>${escapeHtml2(displayText)}</code></pre>
+          ${isTruncated ? `<div style="padding:8px 14px;border-top:1px solid var(--border);font-size:0.75rem;color:var(--text-muted);background:var(--surface-hover);">Showing first ${maxPreviewChars.toLocaleString()} characters. Copy or Download for the complete file.</div>` : ""}
+        </div>
+      `;
+      const copyBtn = document.getElementById("copy-preview-btn");
+      copyBtn?.addEventListener("click", async () => {
+        const copied = await copyTextToClipboard(fullText);
+        if (!copyBtn) return;
+        copyBtn.textContent = copied ? "Copied!" : "Copy failed";
+        setTimeout(() => {
+          copyBtn.textContent = "Copy to clipboard";
+        }, 2e3);
+      });
+      this.previewBackdrop.classList.remove("hidden");
+      return;
+    }
+    this.previewBody.innerHTML = `
+      ${summaryBarHtml}
+      <div style="padding:28px;text-align:center;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface-muted);">
+        <p style="font-weight:600;margin-bottom:6px;">${escapeHtml2(out.filename)}</p>
+        <p class="muted">${escapeHtml2(mime)} \xB7 ${formatBytes(out.bytes.length)}. Click Download above to save your converted file.</p>
       </div>
     `;
-    const bins = Object.entries(h.detectedBinaries);
-    binariesEl.innerHTML = bins.map(
-      ([name, ok]) => `
-      <div class="binary-pill ${ok ? "available" : "missing"}">
-        <span>${escapeHtml(name)}</span>
-        <span>${ok ? "\u2713 Ready" : "\u25CB Fallback"}</span>
-      </div>`
-    ).join("");
+    this.previewBackdrop.classList.remove("hidden");
   }
 };
 if (typeof document !== "undefined") {

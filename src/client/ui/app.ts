@@ -25,6 +25,10 @@ import {
 } from '../workers/local-engines.ts';
 import { WasmLoaderError } from '../workers/wasm-loader.ts';
 import { WorkerPool } from '../workers/worker-pool.ts';
+import {
+  attachFormatPickerListeners,
+  createFormatPickerTriggerHtml,
+} from './format-picker.ts';
 interface BatchQueueItem {
   id: string;
   file: File;
@@ -757,6 +761,7 @@ class OmniConvertApp {
     const srcDef = getFormatById(item.sourceFormat);
     const category = srcDef?.category ?? 'document';
     const presets = getPresetsForCategory(category);
+    const compatibleFormats = getCompatibleTargets(item.sourceFormat);
     const badge = statusBadgeMeta(item);
     const isBusy = isBusyStatus(item.status);
     let deltaBadge = '';
@@ -788,9 +793,7 @@ class OmniConvertApp {
             <span class="arrow-muted" aria-hidden="true">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </span>
-            <select class="target-select" data-action="target" data-id="${item.id}" ${isBusy ? 'disabled' : ''}>
-              ${this.renderTargetSelectOptions(item.sourceFormat, item.targetFormat)}
-            </select>
+            ${createFormatPickerTriggerHtml(item.id, item.targetFormat, compatibleFormats)}
             ${
               presets.length > 0
                 ? `
@@ -839,6 +842,15 @@ class OmniConvertApp {
   }
   private attachCardListeners(): void {
     if (!this.queueList) return;
+    attachFormatPickerListeners(this.queueList, (itemId, targetFormatId) => {
+      const item = this.items.find((i) => i.id === itemId);
+      if (!item) return;
+      item.targetFormat = targetFormatId;
+      item.presetId = '';
+      this.resetCompletedItemForReconvert(item);
+      this.recomputeRouting(item);
+      this.renderQueue();
+    });
     this.queueList.querySelectorAll<HTMLButtonElement>('button[data-action="toggle-settings"]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const item = this.items.find((i) => i.id === btn.dataset.id);

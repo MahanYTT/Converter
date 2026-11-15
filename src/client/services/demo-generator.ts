@@ -62,7 +62,7 @@ function generateDemoCsv(): File {
     '104,PROD-1004,27-inch 4K IPS Monitor,Displays,399.00,210,true',
     '105,PROD-1005,USB-C Docking Station (100W PD),Accessories,89.99,500,true',
     '106,PROD-1006,Bluetooth Optical Mouse,Accessories,45.00,800,false',
-  ].join('\\n');
+  ].join('\n');
   return new File([csv], 'product-catalog.csv', { type: 'text/csv' });
 }
 
@@ -70,7 +70,7 @@ function generateDemoMarkdown(): File {
   const md = [
     '# OmniConvert v2.0 Release Notes',
     '',
-    '## What\\'s New in this Release',
+    "## What's New in this Release",
     'We are excited to announce the latest major update to the **OmniConvert Engine**.',
     '',
     '### Key Features',
@@ -83,8 +83,8 @@ function generateDemoMarkdown(): File {
     '2. Added clean 2-space indentation presets for JSON.',
     '3. Optimized LibreOffice and Pandoc integration for document rendering.',
     '',
-    '*Thank you for using OmniConvert!*'
-  ].join('\\n');
+    '*Thank you for using OmniConvert!*',
+  ].join('\n');
   return new File([md], 'release-notes.md', { type: 'text/markdown' });
 }
 

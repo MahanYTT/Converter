@@ -4,6 +4,8 @@
   "description": "Hybrid Local-First (Browser WASM/WebWorkers/Canvas/WebCodecs) & Managed Server-Fallback Universal File Converter",
   "type": "module",
   "scripts": {
+    "build:client": "npx --yes esbuild src/client/ui/app.ts --bundle --outfile=src/client/bundle.js --format=esm --target=es2022",
+    "build": "npm run build:client",
     "start": "node --experimental-strip-types src/server/index.ts",
     "dev": "node --watch --experimental-strip-types src/server/index.ts",
     "test": "node --experimental-strip-types --test tests/**/*.test.ts",
