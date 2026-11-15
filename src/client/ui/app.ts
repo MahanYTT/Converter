@@ -315,8 +315,25 @@ class OmniConvertApp {
     document.getElementById('paste-source-format')?.addEventListener('change', (e) => {
       const ext = (e.target as HTMLSelectElement).value;
       const nameInput = document.getElementById('paste-filename') as HTMLInputElement | null;
-      if (nameInput && /^snippet(\.[a-z0-9]+)?$/i.test(nameInput.value.trim())) {
-        nameInput.value = `snippet.${ext}`;
+      if (nameInput && /^(snippet|untitled)(\.[a-z0-9]+)?$/i.test(nameInput.value.trim())) {
+        const match = nameInput.value.trim().match(/^(snippet|untitled)/i);
+        const base = match ? match[1] : 'snippet';
+        nameInput.value = `${base}.${ext}`;
+      }
+      const textarea = document.getElementById('paste-textarea') as HTMLTextAreaElement | null;
+      if (textarea) {
+        const placeholders: Record<string, string> = {
+          json: '{\n  "key": "value"\n}',
+          csv: 'id,name\n1,test',
+          yaml: 'key: value\nlist:\n  - item1',
+          xml: '<?xml version="1.0"?>\n<root>\n  <key>value</key>\n</root>',
+          toml: '[table]\nkey = "value"',
+          md: '# Heading\n**bold** text',
+          html: '<!DOCTYPE html>\n<html>\n<body>\n  <h1>Hello</h1>\n</body>\n</html>',
+          ini: '[section]\nkey=value',
+          txt: 'Type your text here...',
+        };
+        textarea.placeholder = placeholders[ext] || placeholders['txt'];
       }
     });
     document.getElementById('add-paste-btn')?.addEventListener('click', () => {
@@ -433,6 +450,57 @@ class OmniConvertApp {
         this.formatsModalBackdrop.classList.add('hidden');
       }
     });
+
+    // Interactive Quick-Format Pills in Dropzone
+    document.querySelectorAll('.quick-format-pill').forEach((pill) => {
+      pill.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const text = pill.textContent?.replace(/\s+/g, ' ').trim() || '';
+        if (text.includes('CSV') && text.includes('JSON')) {
+          const fmtSelect = document.getElementById('paste-source-format') as HTMLSelectElement | null;
+          if (fmtSelect) {
+            fmtSelect.value = 'csv';
+            fmtSelect.dispatchEvent(new Event('change'));
+          }
+          const textarea = document.getElementById('paste-textarea') as HTMLTextAreaElement | null;
+          if (textarea && !textarea.value.trim()) {
+            textarea.value = 'id,name,role\n1,Alice,Engineer\n2,Bob,Designer';
+          }
+          this.openPasteModal();
+        } else if (text.includes('MD') && text.includes('PDF')) {
+          const fmtSelect = document.getElementById('paste-source-format') as HTMLSelectElement | null;
+          if (fmtSelect) {
+            fmtSelect.value = 'md';
+            fmtSelect.dispatchEvent(new Event('change'));
+          }
+          const textarea = document.getElementById('paste-textarea') as HTMLTextAreaElement | null;
+          if (textarea && !textarea.value.trim()) {
+            textarea.value = '# Sample Markdown\n\nThis is a **test** document.\n\n- Item 1\n- Item 2';
+          }
+          this.openPasteModal();
+        } else {
+          this.fileInput?.click();
+        }
+      });
+    });
+
+    // Format chips click delegation
+    document.getElementById('landing-format-chips')?.addEventListener('click', (e) => {
+      const target = (e.target as HTMLElement).closest('.format-chip') as HTMLElement | null;
+      if (!target) return;
+      const fmtId = target.getAttribute('data-pick-format');
+      if (!fmtId) return;
+      if (TEXT_TARGET_IDS.has(fmtId)) {
+        const fmtSelect = document.getElementById('paste-source-format') as HTMLSelectElement | null;
+        if (fmtSelect) {
+          fmtSelect.value = fmtId;
+          fmtSelect.dispatchEvent(new Event('change'));
+        }
+        this.openPasteModal();
+      } else {
+        this.fileInput?.click();
+      }
+    });
   }
   private renderLandingCategoryTabs(category: FormatCategory): void {
     const container = document.getElementById('landing-format-chips');
@@ -441,10 +509,10 @@ class OmniConvertApp {
     container.innerHTML = formats
       .map(
         (f) => `
-          <div class="format-chip">
+          <button type="button" class="format-chip" data-pick-format="${escapeHtml(f.id)}" data-cat="${escapeHtml(f.category)}">
             <strong>${escapeHtml(f.label)}</strong>
             <span>${escapeHtml(f.name)}</span>
-          </div>
+          </button>
         `,
       )
       .join('');
@@ -488,7 +556,7 @@ class OmniConvertApp {
               <strong>${escapeHtml(f.label)}</strong> <span class="muted">(${escapeHtml(f.mimeType)})</span>
               <div class="muted">${escapeHtml(f.name)} — ${escapeHtml(f.description)}</div>
             </div>
-            <span class="fmt-pill">${escapeHtml(categoryLabels[f.category] ?? f.category)}</span>
+            <span class="fmt-pill" data-cat="${escapeHtml(f.category)}">${escapeHtml(categoryLabels[f.category] ?? f.category)}</span>
           </div>
         `,
       )
@@ -780,12 +848,12 @@ class OmniConvertApp {
         </div>
         <div class="job-main-row">
           <div class="job-file-col">
-            <div class="file-thumb" aria-hidden="true">${fileIconSvg}</div>
+            <div class="file-thumb" data-cat="${escapeHtml(category)}" aria-hidden="true">${fileIconSvg}</div>
             <div class="file-meta-col">
               <span class="file-name" title="${escapeHtml(item.file.name)}">${escapeHtml(item.file.name)}</span>
               <div class="file-subline">
                 <span>${formatBytes(item.file.size)}</span>
-                <span class="fmt-pill ${item.magic.isSpoofedOrMismatched ? 'spoof' : ''}">${escapeHtml(item.sourceFormat)}</span>
+                <span class="fmt-pill ${item.magic.isSpoofedOrMismatched ? 'spoof' : ''}" data-cat="${escapeHtml(category)}">${escapeHtml(item.sourceFormat)}</span>
               </div>
             </div>
           </div>
